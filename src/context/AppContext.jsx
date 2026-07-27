@@ -92,15 +92,15 @@ export const AppProvider = ({ children }) => {
     setState(prev => ({ ...prev, activeProfile: profileId }));
   };
 
-  const currentProfileData = state.activeProfile === 'ranju' 
+  const currentProfileData = (state.activeProfile === 'ranju' 
     ? state.ranju 
     : state.activeProfile === 'manish' 
       ? state.manish 
-      : state.couple;
+      : state.couple) || {};
 
   // Active completion %
-  const activeTimeline = currentProfileData.timeline || [];
-  const activeMissions = currentProfileData.missions || [];
+  const activeTimeline = currentProfileData?.timeline || [];
+  const activeMissions = currentProfileData?.missions || [];
   const totalItems = activeTimeline.length + activeMissions.length;
   const completedTimeline = activeTimeline.filter(t => t.completed).length;
   const completedMissions = activeMissions.filter(m => m.completed).length;
@@ -113,13 +113,13 @@ export const AppProvider = ({ children }) => {
     setState(prev => {
       const p = prev.activeProfile;
       if (p === 'couple') {
-        const updatedGoals = prev.couple.goals.map(g => g.id === id ? { ...g, completed: !g.completed } : g);
+        const updatedGoals = (prev.couple?.goals || []).map(g => g.id === id ? { ...g, completed: !g.completed } : g);
         triggerCelebration('standard');
         return { ...prev, couple: { ...prev.couple, goals: updatedGoals } };
       }
 
-      const profileObj = prev[p];
-      const updatedMissions = profileObj.missions.map(m => m.id === id ? { ...m, completed: !m.completed } : m);
+      const profileObj = prev[p] || {};
+      const updatedMissions = (profileObj.missions || []).map(m => m.id === id ? { ...m, completed: !m.completed } : m);
       triggerCelebration('standard');
       return {
         ...prev,
@@ -136,8 +136,8 @@ export const AppProvider = ({ children }) => {
       const p = prev.activeProfile;
       if (p === 'couple') return prev;
 
-      const profileObj = prev[p];
-      const updatedTimeline = profileObj.timeline.map(item => {
+      const profileObj = prev[p] || {};
+      const updatedTimeline = (profileObj.timeline || []).map(item => {
         if (item.id === id) {
           triggerCelebration('standard');
           return { ...item, completed: !item.completed };
@@ -157,8 +157,10 @@ export const AppProvider = ({ children }) => {
   const addWater = (amountMl = 500) => {
     setState(prev => {
       const p = prev.activeProfile === 'manish' ? 'manish' : 'ranju';
-      const profileObj = prev[p];
-      const nextWater = Math.min(profileObj.waterTargetMl, profileObj.waterConsumedMl + amountMl);
+      const profileObj = prev[p] || {};
+      const target = profileObj.waterTargetMl || 2500;
+      const consumed = profileObj.waterConsumedMl || 0;
+      const nextWater = Math.min(target, consumed + amountMl);
       
       triggerCelebration('standard');
 
@@ -175,13 +177,12 @@ export const AppProvider = ({ children }) => {
   const addWalkMinutes = (minutes = 30, withPartner = false) => {
     setState(prev => {
       const p = prev.activeProfile === 'manish' ? 'manish' : 'ranju';
-      const profileObj = prev[p];
+      const profileObj = prev[p] || {};
       
       triggerCelebration('standard');
 
       if (withPartner) {
-        // Also complete couple walk
-        const updatedCoupleGoals = prev.couple.goals.map(g => g.id === 'cg1' ? { ...g, completed: true } : g);
+        const updatedCoupleGoals = (prev.couple?.goals || []).map(g => g.id === 'cg1' ? { ...g, completed: true } : g);
         return {
           ...prev,
           [p]: {
@@ -224,14 +225,14 @@ export const AppProvider = ({ children }) => {
   const logMeal = (type, mealName) => {
     setState(prev => {
       const p = prev.activeProfile === 'manish' ? 'manish' : 'ranju';
-      const profileObj = prev[p];
+      const profileObj = prev[p] || {};
       triggerCelebration('standard');
       return {
         ...prev,
         [p]: {
           ...profileObj,
           loggedMeals: {
-            ...profileObj.loggedMeals,
+            ...(profileObj.loggedMeals || {}),
             [type]: mealName
           }
         }
@@ -250,13 +251,13 @@ export const AppProvider = ({ children }) => {
       if (lower.includes('hair') || lower.includes('scalp') || lower.includes('fall')) {
         replyText = "Ranju, your hair fall rating is currently Low! Continuing boiled egg protein, Vitamin D, and 20 mins Child's Pose directly strengthens hair root anchorage.";
       } else if (lower.includes('water') || lower.includes('drink')) {
-        replyText = `Ranju, you've drunk ${state.ranju.waterConsumedMl} ml of water out of your 2,500 ml goal today. Keep a bottle nearby!`;
+        replyText = `Ranju, you've drunk ${state.ranju?.waterConsumedMl || 0} ml of water out of your 2,500 ml goal today. Keep a bottle nearby!`;
       } else if (lower.includes('manish') || lower.includes('husband') || lower.includes('walk')) {
         replyText = "Taking Manish for the 6:15 PM sunset walk builds joint motivation and helps him reach his 8,000 step fat loss goal!";
       }
     } else if (p === 'manish') {
       if (lower.includes('weight') || lower.includes('fat') || lower.includes('steps')) {
-        replyText = `Manish, you've logged ${state.manish.walkStepsLogged} steps out of your 8,000 steps goal! Keep your lunch high-fiber to boost metabolism and burn fat.`;
+        replyText = `Manish, you've logged ${state.manish?.walkStepsLogged || 0} steps out of your 8,000 steps goal! Keep your lunch high-fiber to boost metabolism and burn fat.`;
       } else if (lower.includes('boil') || lower.includes('skin') || lower.includes('heat')) {
         replyText = "To reduce recurring skin boils, drink 3.0L detox water (cucumber/mint) and avoid fried snacks & refined sugar.";
       } else if (lower.includes('ranju') || lower.includes('wife')) {
@@ -270,7 +271,7 @@ export const AppProvider = ({ children }) => {
       ...prev,
       aiMessages: {
         ...prev.aiMessages,
-        [p]: [...(prev.aiMessages[p] || []), userMsg, aiMsg]
+        [p]: [...(prev.aiMessages?.[p] || []), userMsg, aiMsg]
       }
     }));
   };
@@ -289,6 +290,13 @@ export const AppProvider = ({ children }) => {
     <AppContext.Provider value={{
       ...state,
       currentProfileData,
+      timeline: activeTimeline,
+      missions: activeMissions,
+      waterConsumedMl: currentProfileData?.waterConsumedMl || 0,
+      waterTargetMl: currentProfileData?.waterTargetMl || 2500,
+      walkMinutesLogged: currentProfileData?.walkMinutesLogged || 0,
+      walkStepsLogged: currentProfileData?.walkStepsLogged || 0,
+      yogaSessionCompleted: currentProfileData?.yogaSessionCompleted || false,
       overallCompletionPct,
       activeTab,
       setActiveTab,

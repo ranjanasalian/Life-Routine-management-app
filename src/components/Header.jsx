@@ -4,7 +4,7 @@ import { ProfileSwitcher } from './ProfileSwitcher';
 import { Flame, RotateCcw } from 'lucide-react';
 
 export const Header = () => {
-  const { activeProfile, currentProfileData, resetDay } = useApp();
+  const { activeProfile, currentProfileData = {}, resetDay } = useApp();
 
   const currentDate = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
@@ -15,11 +15,11 @@ export const Header = () => {
   const isCouple = activeProfile === 'couple';
   const userName = isCouple 
     ? "Ranju & Manish" 
-    : currentProfileData.userName || (activeProfile === 'manish' ? 'Manish' : 'Ranju');
+    : (currentProfileData.userName || (activeProfile === 'manish' ? 'Manish' : 'Ranju'));
 
   const avatar = isCouple ? '👫' : (activeProfile === 'manish' ? '⚡' : '🌿');
-  const streak = isCouple ? currentProfileData.coupleStreakDays : currentProfileData.streakDays;
-  const lastPct = isCouple ? 85 : currentProfileData.yesterdayCompletionPct;
+  const streak = isCouple ? (currentProfileData.coupleStreakDays || 7) : (currentProfileData.streakDays || 7);
+  const lastPct = isCouple ? 85 : (currentProfileData.yesterdayCompletionPct || 80);
 
   return (
     <header className="space-y-4">

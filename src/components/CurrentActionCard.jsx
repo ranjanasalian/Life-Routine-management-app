@@ -3,9 +3,13 @@ import { useApp } from '../context/AppContext';
 import { Play, CheckCircle2, Clock, Sparkles, ArrowRight, ShieldCheck } from 'lucide-react';
 
 export const CurrentActionCard = () => {
-  const { timeline, toggleTimelineItem, addWater, setActiveTab } = useApp();
+  const { currentProfileData, timeline = [], toggleTimelineItem, addWater, setActiveTab } = useApp();
 
-  const currentAction = timeline.find(item => !item.completed) || {
+  const activeTimeline = Array.isArray(timeline) && timeline.length > 0 
+    ? timeline 
+    : (Array.isArray(currentProfileData?.timeline) ? currentProfileData.timeline : []);
+
+  const currentAction = activeTimeline.find(item => !item.completed) || {
     id: 'completed_all',
     title: "All Goals Completed Today 🎉",
     description: "You have completed your daily routine mission. Enjoy a serene, peaceful evening.",
