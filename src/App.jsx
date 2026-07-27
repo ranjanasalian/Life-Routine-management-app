@@ -3,21 +3,25 @@ import { AppProvider, useApp } from './context/AppContext';
 import { Header } from './components/Header';
 import { CurrentActionCard } from './components/CurrentActionCard';
 import { TodayMission } from './components/TodayMission';
-import { DailyTimeline } from './components/DailyTimeline';
+import { LifeTimeline } from './components/LifeTimeline';
 import { WaterTracker } from './components/WaterTracker';
-import { YogaStudio } from './components/YogaStudio';
 import { WalkTracker } from './components/WalkTracker';
 import { NutritionGuide } from './components/NutritionGuide';
 import { HealthJourneys } from './components/HealthJourneys';
 import { CoupleMode } from './components/CoupleMode';
-import { HealthSanctuary } from './components/HealthSanctuary';
+import { AIMemoryLog } from './components/AIMemoryLog';
+import { AIOnboardingInterview } from './components/AIOnboardingInterview';
 import { BottomNav } from './components/BottomNav';
 import { NotificationToast } from './components/NotificationToast';
 
 const MainContent = () => {
-  const { activeTab, activeProfile } = useApp();
+  const { activeTab, activeProfile, isOnboarded } = useApp();
 
-  // If Couple Mode profile is active and on today/schedule, render CoupleMode
+  if (!isOnboarded) {
+    return <AIOnboardingInterview />;
+  }
+
+  // If Couple Mode profile is active and on today/couple tab, render CoupleMode
   if (activeProfile === 'couple' && (activeTab === 'today' || activeTab === 'couple')) {
     return (
       <main className="max-w-xl mx-auto px-4 md:px-6 py-4 space-y-6 pb-28">
@@ -34,9 +38,9 @@ const MainContent = () => {
         <>
           <CurrentActionCard />
           <TodayMission />
+          <LifeTimeline />
           <WaterTracker />
           <WalkTracker />
-          <DailyTimeline />
         </>
       )}
 
@@ -44,7 +48,7 @@ const MainContent = () => {
       {activeTab === 'schedule' && (
         <>
           <CurrentActionCard />
-          <DailyTimeline />
+          <LifeTimeline />
         </>
       )}
 
@@ -58,9 +62,12 @@ const MainContent = () => {
         <CoupleMode />
       )}
 
-      {/* Health View */}
-      {(activeTab === 'health' || activeTab === 'yoga' || activeTab === 'nutrition' || activeTab === 'wellness' || activeTab === 'ai_coach' || activeTab === 'progress') && (
-        <HealthSanctuary />
+      {/* Health / Memory / Nutrition View */}
+      {activeTab === 'health' && (
+        <div className="space-y-6">
+          <AIMemoryLog />
+          <NutritionGuide />
+        </div>
       )}
 
     </main>
