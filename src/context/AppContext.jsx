@@ -11,47 +11,7 @@ const defaultInitialState = {
   isOnboarded: false,
   activeProfileId: 'primary_user',
 
-  profiles: [
-    {
-      profileId: 'primary_user',
-      relationship: 'primary',
-      userName: 'Ranju',
-      avatar: '🌿',
-      yesterdayCompletionPct: 82,
-      streakDays: 7,
-      waterConsumedMl: 1500,
-      waterTargetMl: 2500,
-      walkMinutesLogged: 20,
-      yogaSessionCompleted: false,
-      loggedMeals: { breakfast: '2 Idlis + Sambar + 1 Boiled Egg', lunch: null, dinner: null },
-      hairFallLevel: 'Low',
-      healthConcerns: ['severe hair fall', 'dull skin', 'sleep late'],
-      healthGoals: ['hair recovery', 'glowing skin', 'fitness', 'energy'],
-      timeline: RANJU_TIMELINE,
-      missions: RANJU_MISSIONS,
-      mealsData: RANJU_MEALS,
-      journeys: RANJU_JOURNEYS
-    },
-    {
-      profileId: 'family_husband',
-      relationship: 'husband',
-      userName: 'Manish',
-      avatar: '⚡',
-      yesterdayCompletionPct: 85,
-      streakDays: 8,
-      waterConsumedMl: 2000,
-      waterTargetMl: 3000,
-      walkStepsLogged: 4500,
-      walkStepsTarget: 8000,
-      loggedMeals: { breakfast: 'Sprouts Salad + 2 Boiled Eggs', lunch: null, dinner: null },
-      healthConcerns: ['recurring painful boils', 'dust allergy', '95 kg weight', 'sleep late'],
-      healthGoals: ['weight loss', 'boil reduction', '8,000 steps daily'],
-      timeline: MANISH_TIMELINE,
-      missions: MANISH_MISSIONS,
-      mealsData: MANISH_MEALS,
-      journeys: MANISH_JOURNEYS
-    }
-  ],
+  profiles: [],
 
   couple: {
     coupleWalkCompleted: false,
@@ -114,14 +74,17 @@ export const AppProvider = ({ children }) => {
         ...prev,
         isOnboarded: true,
         activeProfileId: formatted[0]?.profileId || 'primary_user',
-        profiles: formatted
+        profiles: formatted,
+        notifications: []
       };
     });
   };
 
   const currentProfileData = state.activeProfileId === 'couple'
     ? state.couple
-    : (state.profiles.find(p => p.profileId === state.activeProfileId) || state.profiles[0] || {});
+    : ((state.profiles && state.profiles.length > 0)
+        ? (state.profiles.find(p => p.profileId === state.activeProfileId) || state.profiles[0])
+        : {});
 
   const isManishOrHusband = currentProfileData?.relationship === 'husband' || (currentProfileData?.userName && currentProfileData.userName.toLowerCase().includes('manish'));
 
@@ -145,7 +108,7 @@ export const AppProvider = ({ children }) => {
         return { ...prev, couple: { ...prev.couple, goals: updatedGoals } };
       }
 
-      const updatedProfiles = prev.profiles.map(p => {
+      const updatedProfiles = (prev.profiles || []).map(p => {
         if (p.profileId === pid) {
           const updatedMissions = (p.missions || []).map(m => m.id === id ? { ...m, completed: !m.completed } : m);
           return { ...p, missions: updatedMissions };
@@ -163,7 +126,7 @@ export const AppProvider = ({ children }) => {
       const pid = prev.activeProfileId;
       if (pid === 'couple') return prev;
 
-      const updatedProfiles = prev.profiles.map(p => {
+      const updatedProfiles = (prev.profiles || []).map(p => {
         if (p.profileId === pid) {
           const updatedTimeline = (p.timeline || []).map(item => item.id === id ? { ...item, completed: !item.completed } : item);
           return { ...p, timeline: updatedTimeline };
@@ -179,7 +142,7 @@ export const AppProvider = ({ children }) => {
   const addWater = (amountMl = 500) => {
     setState(prev => {
       const pid = prev.activeProfileId;
-      const updatedProfiles = prev.profiles.map(p => {
+      const updatedProfiles = (prev.profiles || []).map(p => {
         if (p.profileId === pid) {
           const target = p.waterTargetMl || 2500;
           const next = Math.min(target, (p.waterConsumedMl || 0) + amountMl);
@@ -195,7 +158,7 @@ export const AppProvider = ({ children }) => {
   const addWalkMinutes = (minutes = 30, withPartner = false) => {
     setState(prev => {
       const pid = prev.activeProfileId;
-      const updatedProfiles = prev.profiles.map(p => {
+      const updatedProfiles = (prev.profiles || []).map(p => {
         if (p.profileId === pid) {
           return {
             ...p,
@@ -228,7 +191,7 @@ export const AppProvider = ({ children }) => {
   const completeYogaSession = () => {
     setState(prev => {
       triggerCelebration('major');
-      const updatedProfiles = prev.profiles.map(p => {
+      const updatedProfiles = (prev.profiles || []).map(p => {
         if (p.profileId === prev.activeProfileId) {
           return { ...p, yogaSessionCompleted: true };
         }
@@ -241,7 +204,7 @@ export const AppProvider = ({ children }) => {
   const logMeal = (type, mealName) => {
     setState(prev => {
       const pid = prev.activeProfileId;
-      const updatedProfiles = prev.profiles.map(p => {
+      const updatedProfiles = (prev.profiles || []).map(p => {
         if (p.profileId === pid) {
           return {
             ...p,
@@ -258,8 +221,9 @@ export const AppProvider = ({ children }) => {
   const resetDay = () => {
     setState(prev => ({
       ...prev,
-      isOnboarded: false, // reset onboarding to test fresh setup
-      profiles: defaultInitialState.profiles
+      isOnboarded: false,
+      profiles: [],
+      notifications: []
     }));
     triggerCelebration('major');
   };

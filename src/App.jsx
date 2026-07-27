@@ -17,7 +17,7 @@ import { NotificationToast } from './components/NotificationToast';
 const MainContent = () => {
   const { activeTab, activeProfileId, isOnboarded } = useApp();
 
-  // Fullscreen Onboarding View (hides Header & BottomNav)
+  // Fullscreen Onboarding View (hides Header, BottomNav & Notifications)
   if (!isOnboarded) {
     return <AIOnboardingInterview />;
   }
@@ -83,7 +83,7 @@ const AppShell = () => {
       {isOnboarded && <Header />}
       <MainContent />
       {isOnboarded && <BottomNav />}
-      <NotificationToast />
+      {isOnboarded && <NotificationToast />}
     </div>
   );
 };
