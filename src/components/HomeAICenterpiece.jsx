@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useApp } from '../context/AppContext';
+import { useApp, getRealTimeScheduleItem } from '../context/AppContext';
 import { Bot, Send, Sparkles, Droplets, Footprints, Utensils, Play, Settings } from 'lucide-react';
 
 const getShortSummaryText = (concerns = [], goals = []) => {
@@ -53,11 +53,8 @@ export const HomeAICenterpiece = () => {
 
   const summarySentence = getShortSummaryText(concerns, goals);
 
-  const currentAction = (timeline || []).find(item => !item.completed) || {
-    title: "All Daily Goals Complete 🎉",
-    description: "Relax and enjoy a peaceful, restorative evening.",
-    time: "Now"
-  };
+  // Real-time schedule item based on current time of day
+  const currentAction = getRealTimeScheduleItem(timeline);
 
   const currentProfileMsgs = (aiMessages && aiMessages[activeProfileId] && aiMessages[activeProfileId].length > 0)
     ? aiMessages[activeProfileId]
@@ -135,11 +132,16 @@ export const HomeAICenterpiece = () => {
           </p>
         </div>
 
-        {/* Next Activity Prompt */}
+        {/* Real-time Current Activity Prompt */}
         <div className="p-4 rounded-2xl bg-emerald-950/30 border border-emerald-500/30 space-y-2">
-          <span className="text-[10px] font-extrabold uppercase tracking-widest text-emerald-400 flex items-center gap-1">
-            <Play className="w-3 h-3 fill-emerald-400" /> WHAT TO DO RIGHT NOW ({currentAction.time})
-          </span>
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-extrabold uppercase tracking-widest text-emerald-400 flex items-center gap-1">
+              <Play className="w-3 h-3 fill-emerald-400" /> WHAT TO DO RIGHT NOW ({currentAction.time})
+            </span>
+            {currentAction.next && (
+              <span className="text-[10px] text-slate-400 font-mono">Up next: {currentAction.next}</span>
+            )}
+          </div>
           <h3 className="text-base font-bold text-white font-display">{currentAction.title}</h3>
           <p className="text-xs text-slate-300 font-medium">{currentAction.description}</p>
         </div>

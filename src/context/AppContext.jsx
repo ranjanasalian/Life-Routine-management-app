@@ -38,6 +38,31 @@ const cleanPronouns = (str) => {
     .trim();
 };
 
+export const getRealTimeScheduleItem = (timeline = []) => {
+  const now = new Date();
+  const currentHour = now.getHours();
+
+  if (currentHour < 8) {
+    return { title: "Good Morning & Scalp Hydration", time: "7:30 AM", description: "Sip warm water with lemon to flush toxins.", next: "Morning Walk at 8:30 AM" };
+  } else if (currentHour < 9) {
+    return { title: "Morning Brisk Walk", time: "8:30 AM", description: "30-min walk to boost blood circulation.", next: "Protein Breakfast at 9:15 AM" };
+  } else if (currentHour < 11) {
+    return { title: "Protein-Rich Breakfast", time: "9:15 AM", description: "Eat eggs/sprouts/dal for keratin synthesis.", next: "Midday Hydration at 11:30 AM" };
+  } else if (currentHour < 13) {
+    return { title: "Midday Hydration", time: "11:30 AM", description: "Drink 500 ml water to stay hydrated.", next: "High-Fiber Lunch at 1:30 PM" };
+  } else if (currentHour < 16) {
+    return { title: "Afternoon Movement & Hydration", time: "1:30 PM - 4:00 PM", description: "Stand up, stretch for 5 mins, drink water.", next: "Restorative Yoga at 5:30 PM" };
+  } else if (currentHour < 18) {
+    return { title: "Restorative Yoga / Exercise", time: "5:30 PM", description: "20 mins Child's Pose & Downward Dog for scalp circulation.", next: "Sunset Walk Together at 6:15 PM" };
+  } else if (currentHour < 20) {
+    return { title: "Sunset Walk Together 👫", time: "6:15 PM", description: "30-min evening walk together.", next: "Shared Dinner at 8:00 PM" };
+  } else if (currentHour < 22) {
+    return { title: "Wholesome Shared Dinner", time: "8:00 PM", description: "Light protein & veggie dinner for overnight repair.", next: "Bedtime Wind-Down at 10:15 PM" };
+  } else {
+    return { title: "Bedtime Wind-Down", time: "10:15 PM", description: "Turn off screens and prepare for restorative sleep.", next: "Good Morning Hydration tomorrow at 7:30 AM" };
+  }
+};
+
 export const AppProvider = ({ children }) => {
   const [state, setState] = useState(() => loadAppState(defaultInitialState));
   const [activeTab, setActiveTab] = useState('today');
@@ -255,6 +280,9 @@ export const AppProvider = ({ children }) => {
     const lower = userText.toLowerCase();
     let replyText = '';
 
+    // Real-time schedule match
+    const realTimeItem = getRealTimeScheduleItem(profileObj.timeline);
+
     // INTENT 1: Current Time / Clock / Next Activity Inquiry
     if (
       lower.includes('time') || 
@@ -263,8 +291,7 @@ export const AppProvider = ({ children }) => {
       lower.includes('next activity') || 
       lower.includes('what to do right now')
     ) {
-      const currentAction = (profileObj.timeline || []).find(item => !item.completed) || { title: 'All daily activities completed! 🎉', time: 'Rest Mode', description: 'Enjoy your evening.' };
-      replyText = `The current time is ${nowTime}. Right now on your Life Timeline (${currentAction.time}): ${currentAction.title}. ${currentAction.description || ''}`;
+      replyText = `It is currently ${nowTime}. On your Life Timeline right now: ${realTimeItem.title} (${realTimeItem.time}). ${realTimeItem.description}\n\nUp next: ${realTimeItem.next}.`;
     }
     // INTENT 2: Daily Plan / Schedule / Routine
     else if (
@@ -348,8 +375,7 @@ export const AppProvider = ({ children }) => {
     }
     // Conversational Fallback
     else {
-      const currentAction = (profileObj.timeline || []).find(item => !item.completed) || { title: 'All daily activities complete!', time: 'Rest Mode' };
-      replyText = `I hear you, ${name}! Right now on your schedule (${currentAction.time}): ${currentAction.title}. Following your daily Life Timeline step-by-step will help you achieve ${goals || 'your health goals'}. Feel free to ask me for your daily plan, water status, or meal suggestions anytime!`;
+      replyText = `I'm right here with you, ${name}! It is currently ${nowTime}. Right now on your timeline: ${realTimeItem.title}. Following your daily Life Timeline step-by-step will help you achieve ${goals || 'your health goals'}. Feel free to ask me for your daily plan, water status, or meal suggestions anytime!`;
     }
 
     const aiMsg = { sender: 'ai', text: replyText, timestamp: nowTime };
