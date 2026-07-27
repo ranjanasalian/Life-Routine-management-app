@@ -27,7 +27,6 @@ const defaultInitialState = {
   notifications: []
 };
 
-// Pronoun cleaner helper
 const cleanPronouns = (str) => {
   if (!str || typeof str !== 'string') return '';
   return str
@@ -241,70 +240,89 @@ export const AppProvider = ({ children }) => {
     const pid = state.activeProfileId || 'primary_user';
     const profileObj = (state.profiles || []).find(p => p.profileId === pid) || state.profiles[0] || {};
     const name = profileObj.userName || 'there';
-    const rawGoals = Array.isArray(profileObj.healthGoals) ? profileObj.healthGoals.join(', ') : (profileObj.healthGoals || '');
-    const cleanGoals = cleanPronouns(rawGoals);
-
+    const isHusband = profileObj.relationship === 'husband' || (name && name.toLowerCase().includes('manish'));
+    
     const water = profileObj.waterConsumedMl || 0;
-    const waterTarget = profileObj.waterTargetMl || 2500;
+    const waterTarget = profileObj.waterTargetMl || (isHusband ? 3000 : 2500);
     const walk = profileObj.walkStepsLogged || 0;
-    const walkTarget = profileObj.walkStepsTarget || 8000;
+    const walkTarget = profileObj.walkStepsTarget || (isHusband ? 8000 : 5000);
 
     const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const userMsg = { sender: 'user', text: userText.trim(), timestamp };
 
     const lower = userText.toLowerCase();
-    let replyText = `I'm right here with you, ${name}! Keeping up with your daily timeline will help you achieve ${cleanGoals || 'your target wellness goals'}.`;
+    let replyText = '';
 
-    // Intent 1: Morning Guidance / How to start day
+    // INTENT 1: Daily Plan / Schedule / What to do
     if (
-      lower.includes('start my day') || 
-      lower.includes('what to do today') || 
-      lower.includes('tell me what to do') || 
-      lower.includes('how to start') || 
-      lower.includes('morning') || 
-      lower.includes('routine') || 
-      lower.includes('guide me')
+      lower.includes('plan') || 
+      lower.includes('today') || 
+      lower.includes('start') || 
+      lower.includes('what to do') || 
+      lower.includes('tell me') || 
+      lower.includes('schedule') || 
+      lower.includes('routine') ||
+      lower.includes('guide')
     ) {
-      replyText = `Good Morning, ${name}! 🌿 Here is how to start your day for maximum energy and health:
+      if (isHusband) {
+        replyText = `Good Morning, ${name} ⚡! Here is your personalized daily plan for gradual fat loss & boil reduction:
 
-1. 💧 Hydrate First: Drink 500 ml warm water right after waking up to flush metabolic toxins.
-2. 🏃‍♀️ Morning Walk: Step out for a 30-minute morning walk to boost blood circulation and serotonin.
-3. 🥗 Protein Breakfast: Eat a protein-rich breakfast (e.g. Sprouts salad + Eggs or Paneer) to nourish hair roots and sustain energy.
-4. 🧘‍♀️ Restorative Routine: Complete 20 mins of yoga or stretching at 5:30 PM to manage stress and support root health.
+1. 💧 Anti-Boil Hydration (7:15 AM): Drink 500 ml warm water to lower internal body heat.
+2. 🏃‍♂️ Morning Walk (7:45 AM): 30-min brisk walk (4,000 steps) to boost fat metabolism.
+3. 🥗 High-Fiber Breakfast (9:00 AM): Sprouts salad + 2 boiled eggs to preserve muscle mass.
+4. 💧 Midday Hydration (11:30 AM): Drink 3.0L detox water (cucumber/mint) throughout the day.
+5. 👫 Sunset Walk Together (6:15 PM): Join Ranju for evening walk to hit your 8,000 steps target!
+6. 🌙 Early Sleep (10:15 PM): Bedtime before 10:30 PM to regulate Ghrelin appetite hormones.`;
+      } else {
+        replyText = `Good Morning, ${name} 🌿! Here is your personalized daily plan for hair health, skin glow & fitness:
 
-Follow your Life Timeline step-by-step today, and I will guide you along the way!`;
+1. 💧 Scalp Hydration (7:30 AM): Sip warm lemon water to flush toxins.
+2. 🏃‍♀️ Morning Walk (8:30 AM): 30-min walk to boost scalp circulation.
+3. 🥗 Protein Breakfast (9:15 AM): Eggs/Dal/Sprouts to supply keratin amino acids for hair roots.
+4. 🧘‍♀️ Restorative Yoga (5:30 PM): 20 mins Child's Pose & Downward Dog to strengthen root anchorage.
+5. 👫 Evening Walk (6:15 PM): 30 mins walking together.
+6. 🌙 Restorative Sleep (10:45 PM): Sleep early to allow overnight hair cell regeneration.`;
+      }
     } 
-    // Intent 2: Hair & Scalp
+    // INTENT 2: Hair & Scalp
     else if (lower.includes('hair') || lower.includes('scalp') || lower.includes('fall')) {
       replyText = `${name}, to strengthen your hair roots and reverse hair fall:
 
-1. Protein Focus: Eat boiled eggs, dal, or sprouts today for essential keratin amino acids.
+1. Protein Focus: Eat boiled eggs, dal, or sprouts today for keratin synthesis.
 2. Micronutrients: Ensure Vitamin D, B12, Iron, and Zinc intake.
-3. Scalp Circulation: Practice 20 mins of restorative yoga (Downward Dog & Child's Pose) at 5:30 PM.
-4. Early Bedtime: Sleep before 10:45 PM for overnight cell regeneration.`;
+3. Scalp Circulation: Practice 20 mins of restorative yoga at 5:30 PM.
+4. Early Sleep: Go to bed before 10:45 PM for cell repair.`;
     } 
-    // Intent 3: Skin & Boils
+    // INTENT 3: Boils / Skin Heat / Detox
     else if (lower.includes('boil') || lower.includes('heat') || lower.includes('skin') || lower.includes('glow')) {
-      replyText = `${name}, for skin health and reducing internal body heat:
+      if (isHusband || lower.includes('boil')) {
+        replyText = `${name}, to reduce recurring skin boils and clear body heat:
 
-1. 3.0L Detox Water: Drink cucumber, mint, and lemon infused water to cool body heat.
-2. Zero Processed Sugar: Avoid fried snacks and refined sugars that trigger skin pore inflammation.
-3. Anti-Inflammatory Lunch: Eat raw cucumber/tomato salad with lean protein.`;
+1. 3.0L Detox Hydration: Drink cucumber, mint, and lemon water all day.
+2. Zero Processed Sugar: Avoid fried snacks & refined sugars that trigger pore inflammation.
+3. Fiber Lunch: Eat large cucumber/tomato salad with lean protein.`;
+      } else {
+        replyText = `${name}, to enhance natural skin glow and collagen:
+
+1. 2.5L Water Target: Hydration keeps skin plump and flushes toxins.
+2. Antioxidants: Eat fresh berries, green leafy vegetables, and citrus.
+3. Restful Sleep: Sleeping by 10:45 PM reduces dark circles and dullness.`;
+      }
     } 
-    // Intent 4: Hydration
+    // INTENT 4: Hydration
     else if (lower.includes('water') || lower.includes('drink') || lower.includes('hydrate')) {
-      replyText = `${name}, you have logged ${water} ml of water out of your ${waterTarget} ml daily target. Drink a glass of water right now to stay on track!`;
+      replyText = `${name}, you have logged ${water} ml out of your ${waterTarget} ml daily target. Drink 500 ml right now to maintain peak energy!`;
     } 
-    // Intent 5: Walking / Weight Loss
+    // INTENT 5: Walking / Weight / Steps
     else if (lower.includes('walk') || lower.includes('step') || lower.includes('weight') || lower.includes('fat')) {
-      replyText = `${name}, to accelerate weight loss and reach your target:
+      replyText = `${name}, to reach your 8,000 steps walking goal and support fat loss:
 
-1. 8,000 Steps Target: Log a 4,000-step morning walk and join your partner for the 6:15 PM sunset walk.
-2. Light Dinner: Keep dinner protein and veggie focused to burn fat overnight.`;
+1. Current Progress: ${walk} steps logged out of ${walkTarget} target steps.
+2. Evening Walk: Join the 6:15 PM sunset walk to complete the remaining steps!`;
     } 
-    // Intent 6: Sleep
-    else if (lower.includes('sleep') || lower.includes('tired') || lower.includes('exhausted')) {
-      replyText = `${name}, restorative sleep is key. Turn off screens at 10:00 PM and prepare for bedtime by 10:45 PM. Getting 7.5 hours of sleep regulates appetite and lowers cortisol.`;
+    // FALLBACK
+    else {
+      replyText = `I'm right here with you, ${name}! Following your daily Life Timeline step-by-step will help you achieve your health goals. Ask me for today's plan anytime!`;
     }
 
     const aiMsg = { sender: 'ai', text: replyText, timestamp };

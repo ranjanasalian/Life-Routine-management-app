@@ -32,6 +32,7 @@ const getShortSummaryText = (concerns = [], goals = []) => {
 export const HomeAICenterpiece = () => {
   const { 
     currentProfileData = {}, 
+    isManishOrHusband,
     timeline = [], 
     missions = [],
     addWater,
@@ -63,7 +64,7 @@ export const HomeAICenterpiece = () => {
     : [
         { 
           sender: 'ai', 
-          text: `Good Morning, ${userName} ${avatar}! I'm your AI Wellness Companion. Your goals focus on ${goals.slice(0, 2).join(' & ') || 'wellness & routine'}. Ask me anything or tap a suggestion pill below!`, 
+          text: `Good Morning, ${userName} ${avatar}! I'm your AI Wellness Companion. Your goals focus on ${goals.slice(0, 2).join(' & ') || 'wellness & routine'}. Ask me "What's the plan for today?" or tap a suggestion pill below!`, 
           timestamp: '7:30 AM' 
         }
       ];
@@ -80,11 +81,16 @@ export const HomeAICenterpiece = () => {
     sendAICoachMessage(suggestionText);
   };
 
-  const sampleSuggestions = [
-    "Tell me how to start my day right now",
+  const sampleSuggestions = isManishOrHusband ? [
+    "What's the plan for today?",
+    "How to reduce recurring skin boils & internal heat?",
+    "Tips for 8,000 steps & gradual fat loss",
+    "Check my 3.0L detox water goal"
+  ] : [
+    "What's the plan for today?",
     "How to reverse hair fall & strengthen scalp?",
-    "How to reduce skin boils & body heat?",
-    "Check my daily water goal"
+    "How to improve natural skin glow?",
+    "Check my daily water & yoga goal"
   ];
 
   return (
@@ -189,7 +195,7 @@ export const HomeAICenterpiece = () => {
           <h3 className="text-sm font-bold text-white font-display">Chat with AI Companion ({userName})</h3>
         </div>
 
-        {/* Quick Suggestion Pills */}
+        {/* Dynamic Quick Suggestion Pills */}
         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1">
           {sampleSuggestions.map((s, idx) => (
             <button
@@ -211,7 +217,7 @@ export const HomeAICenterpiece = () => {
                   ? 'bg-emerald-500/20 border border-emerald-500/30 text-emerald-100 rounded-br-none font-medium' 
                   : 'bg-slate-950 border border-white/10 text-slate-200 rounded-bl-none'
               }`}>
-                <p className="leading-relaxed">{msg.text}</p>
+                <p className="leading-relaxed whitespace-pre-line">{msg.text}</p>
                 <span className="text-[9px] text-slate-500 block text-right font-mono">{msg.timestamp}</span>
               </div>
             </div>
