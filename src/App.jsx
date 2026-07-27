@@ -15,14 +15,15 @@ import { BottomNav } from './components/BottomNav';
 import { NotificationToast } from './components/NotificationToast';
 
 const MainContent = () => {
-  const { activeTab, activeProfile, isOnboarded } = useApp();
+  const { activeTab, activeProfileId, isOnboarded } = useApp();
 
+  // Fullscreen Onboarding View (hides Header & BottomNav)
   if (!isOnboarded) {
     return <AIOnboardingInterview />;
   }
 
   // If Couple Mode profile is active and on today/couple tab, render CoupleMode
-  if (activeProfile === 'couple' && (activeTab === 'today' || activeTab === 'couple')) {
+  if (activeProfileId === 'couple' && (activeTab === 'today' || activeTab === 'couple')) {
     return (
       <main className="max-w-xl mx-auto px-4 md:px-6 py-4 space-y-6 pb-28">
         <CoupleMode />
@@ -74,15 +75,23 @@ const MainContent = () => {
   );
 };
 
+const AppShell = () => {
+  const { isOnboarded } = useApp();
+
+  return (
+    <div className="min-h-screen bg-[#05070c] text-slate-100 flex flex-col font-sans selection:bg-emerald-500/30 selection:text-emerald-300">
+      {isOnboarded && <Header />}
+      <MainContent />
+      {isOnboarded && <BottomNav />}
+      <NotificationToast />
+    </div>
+  );
+};
+
 export default function App() {
   return (
     <AppProvider>
-      <div className="min-h-screen bg-[#05070c] text-slate-100 flex flex-col font-sans selection:bg-emerald-500/30 selection:text-emerald-300">
-        <Header />
-        <MainContent />
-        <BottomNav />
-        <NotificationToast />
-      </div>
+      <AppShell />
     </AppProvider>
   );
 }

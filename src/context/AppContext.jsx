@@ -8,52 +8,51 @@ import { triggerCelebration } from '../utils/confetti';
 const AppContext = createContext(null);
 
 const defaultInitialState = {
-  activeProfile: 'ranju', // 'ranju' | 'manish' | 'couple'
-  
-  // Ranju Data
-  ranju: {
-    userName: 'Ranju',
-    avatar: '🌿',
-    yesterdayCompletionPct: 82,
-    streakDays: 7,
-    waterConsumedMl: 1500,
-    waterTargetMl: 2500,
-    walkMinutesLogged: 20,
-    yogaSessionCompleted: false,
-    loggedMeals: { breakfast: '2 Idlis + Sambar + 1 Boiled Egg', lunch: null, dinner: null },
-    dailyFruitLogged: true,
-    dailyVegLogged: true,
-    hairFallLevel: 'Low',
-    hairCareLogged: true,
-    sleepHours: 7.5,
-    moodRating: 'Good',
-    timeline: RANJU_TIMELINE,
-    missions: RANJU_MISSIONS,
-    mealsData: RANJU_MEALS,
-    journeys: RANJU_JOURNEYS
-  },
+  isOnboarded: false,
+  activeProfileId: 'primary_user',
 
-  // Manish Data
-  manish: {
-    userName: 'Manish',
-    avatar: '⚡',
-    yesterdayCompletionPct: 85,
-    streakDays: 8,
-    waterConsumedMl: 2000,
-    waterTargetMl: 3000,
-    walkStepsLogged: 4500,
-    walkStepsTarget: 8000,
-    loggedMeals: { breakfast: 'Sprouts Salad + 2 Boiled Eggs', lunch: null, dinner: null },
-    dailyVegLogged: true,
-    boilReductionStatus: 'Significantly Reduced',
-    sleepHours: 7.5,
-    timeline: MANISH_TIMELINE,
-    missions: MANISH_MISSIONS,
-    mealsData: MANISH_MEALS,
-    journeys: MANISH_JOURNEYS
-  },
+  profiles: [
+    {
+      profileId: 'primary_user',
+      relationship: 'primary',
+      userName: 'Ranju',
+      avatar: '🌿',
+      yesterdayCompletionPct: 82,
+      streakDays: 7,
+      waterConsumedMl: 1500,
+      waterTargetMl: 2500,
+      walkMinutesLogged: 20,
+      yogaSessionCompleted: false,
+      loggedMeals: { breakfast: '2 Idlis + Sambar + 1 Boiled Egg', lunch: null, dinner: null },
+      hairFallLevel: 'Low',
+      healthConcerns: ['severe hair fall', 'dull skin', 'sleep late'],
+      healthGoals: ['hair recovery', 'glowing skin', 'fitness', 'energy'],
+      timeline: RANJU_TIMELINE,
+      missions: RANJU_MISSIONS,
+      mealsData: RANJU_MEALS,
+      journeys: RANJU_JOURNEYS
+    },
+    {
+      profileId: 'family_husband',
+      relationship: 'husband',
+      userName: 'Manish',
+      avatar: '⚡',
+      yesterdayCompletionPct: 85,
+      streakDays: 8,
+      waterConsumedMl: 2000,
+      waterTargetMl: 3000,
+      walkStepsLogged: 4500,
+      walkStepsTarget: 8000,
+      loggedMeals: { breakfast: 'Sprouts Salad + 2 Boiled Eggs', lunch: null, dinner: null },
+      healthConcerns: ['recurring painful boils', 'dust allergy', '95 kg weight', 'sleep late'],
+      healthGoals: ['weight loss', 'boil reduction', '8,000 steps daily'],
+      timeline: MANISH_TIMELINE,
+      missions: MANISH_MISSIONS,
+      mealsData: MANISH_MEALS,
+      journeys: MANISH_JOURNEYS
+    }
+  ],
 
-  // Couple Data
   couple: {
     coupleWalkCompleted: false,
     coupleDinnerCompleted: false,
@@ -62,22 +61,7 @@ const defaultInitialState = {
     milestones: COUPLE_MILESTONES
   },
 
-  // Active AI Messages
-  aiMessages: {
-    ranju: [
-      { sender: 'ai', text: "Good Morning, Ranju 🌿 Yesterday you completed 82% of your routine! Today's restorative yoga and protein breakfast are ready to strengthen hair anchorage and skin glow.", timestamp: '7:30 AM' }
-    ],
-    manish: [
-      { sender: 'ai', text: "Good Morning, Manish ⚡ Today we're targeting 8,000 steps and 3.0L detox water to lower internal body heat and burn fat. Let's start with a morning walk!", timestamp: '7:15 AM' }
-    ],
-    couple: [
-      { sender: 'ai', text: "Welcome to Our Journey 👫 Ranju & Manish! Walking together at 6:15 PM sunset and sharing a healthy dinner builds lifelong habits together.", timestamp: '8:00 AM' }
-    ]
-  },
-
-  notifications: [
-    { id: 1, type: 'water', title: 'Hydration Station', message: 'Time for a glass of water.', time: '8:00 AM', read: false }
-  ]
+  notifications: []
 };
 
 export const AppProvider = ({ children }) => {
@@ -89,14 +73,57 @@ export const AppProvider = ({ children }) => {
   }, [state]);
 
   const switchProfile = (profileId) => {
-    setState(prev => ({ ...prev, activeProfile: profileId }));
+    setState(prev => ({ ...prev, activeProfileId: profileId }));
   };
 
-  const currentProfileData = (state.activeProfile === 'ranju' 
-    ? state.ranju 
-    : state.activeProfile === 'manish' 
-      ? state.manish 
-      : state.couple) || {};
+  const setDynamicProfilesAndCompleteOnboarding = (profilesArray) => {
+    setState(prev => {
+      const formatted = profilesArray.map((p, i) => {
+        const isPrimary = p.relationship === 'primary' || i === 0;
+        const pid = isPrimary ? 'primary_user' : `family_${p.relationship}_${Date.now()}`;
+        const isManishOrHusband = (p.userName && p.userName.toLowerCase().includes('manish')) || p.relationship === 'husband';
+        
+        return {
+          profileId: pid,
+          relationship: p.relationship || (isPrimary ? 'primary' : 'family'),
+          userName: p.userName || (isPrimary ? 'Primary User' : 'Family Member'),
+          avatar: isPrimary ? '🌿' : (isManishOrHusband ? '⚡' : '🌸'),
+          age: parseInt(p.age) || 30,
+          weightKg: parseInt(p.weightKg) || 60,
+          targetWeightKg: parseInt(p.targetWeightKg) || 55,
+          wakeTime: p.wakeTime || '7:30 AM',
+          sleepTime: p.sleepTime || '10:45 PM',
+          waterConsumedMl: 1000,
+          waterTargetMl: parseInt(p.waterTargetMl) || 2500,
+          walkMinutesLogged: 15,
+          walkStepsLogged: 3500,
+          healthConcerns: typeof p.healthConcerns === 'string' ? [p.healthConcerns] : (p.healthConcerns || []),
+          healthGoals: typeof p.healthGoals === 'string' ? [p.healthGoals] : (p.healthGoals || []),
+          timeline: isManishOrHusband ? MANISH_TIMELINE : RANJU_TIMELINE,
+          missions: isManishOrHusband ? MANISH_MISSIONS : RANJU_MISSIONS,
+          mealsData: isManishOrHusband ? MANISH_MEALS : RANJU_MEALS,
+          journeys: isManishOrHusband ? MANISH_JOURNEYS : RANJU_JOURNEYS,
+          yesterdayCompletionPct: 82,
+          streakDays: 7
+        };
+      });
+
+      triggerCelebration('major');
+
+      return {
+        ...prev,
+        isOnboarded: true,
+        activeProfileId: formatted[0]?.profileId || 'primary_user',
+        profiles: formatted
+      };
+    });
+  };
+
+  const currentProfileData = state.activeProfileId === 'couple'
+    ? state.couple
+    : (state.profiles.find(p => p.profileId === state.activeProfileId) || state.profiles[0] || {});
+
+  const isManishOrHusband = currentProfileData?.relationship === 'husband' || (currentProfileData?.userName && currentProfileData.userName.toLowerCase().includes('manish'));
 
   // Active completion %
   const activeTimeline = currentProfileData?.timeline || [];
@@ -111,85 +138,81 @@ export const AppProvider = ({ children }) => {
   // Actions
   const toggleMission = (id) => {
     setState(prev => {
-      const p = prev.activeProfile;
-      if (p === 'couple') {
+      const pid = prev.activeProfileId;
+      if (pid === 'couple') {
         const updatedGoals = (prev.couple?.goals || []).map(g => g.id === id ? { ...g, completed: !g.completed } : g);
         triggerCelebration('standard');
         return { ...prev, couple: { ...prev.couple, goals: updatedGoals } };
       }
 
-      const profileObj = prev[p] || {};
-      const updatedMissions = (profileObj.missions || []).map(m => m.id === id ? { ...m, completed: !m.completed } : m);
-      triggerCelebration('standard');
-      return {
-        ...prev,
-        [p]: {
-          ...profileObj,
-          missions: updatedMissions
+      const updatedProfiles = prev.profiles.map(p => {
+        if (p.profileId === pid) {
+          const updatedMissions = (p.missions || []).map(m => m.id === id ? { ...m, completed: !m.completed } : m);
+          return { ...p, missions: updatedMissions };
         }
-      };
+        return p;
+      });
+
+      triggerCelebration('standard');
+      return { ...prev, profiles: updatedProfiles };
     });
   };
 
   const toggleTimelineItem = (id) => {
     setState(prev => {
-      const p = prev.activeProfile;
-      if (p === 'couple') return prev;
+      const pid = prev.activeProfileId;
+      if (pid === 'couple') return prev;
 
-      const profileObj = prev[p] || {};
-      const updatedTimeline = (profileObj.timeline || []).map(item => {
-        if (item.id === id) {
-          triggerCelebration('standard');
-          return { ...item, completed: !item.completed };
+      const updatedProfiles = prev.profiles.map(p => {
+        if (p.profileId === pid) {
+          const updatedTimeline = (p.timeline || []).map(item => item.id === id ? { ...item, completed: !item.completed } : item);
+          return { ...p, timeline: updatedTimeline };
         }
-        return item;
+        return p;
       });
-      return {
-        ...prev,
-        [p]: {
-          ...profileObj,
-          timeline: updatedTimeline
-        }
-      };
+
+      triggerCelebration('standard');
+      return { ...prev, profiles: updatedProfiles };
     });
   };
 
   const addWater = (amountMl = 500) => {
     setState(prev => {
-      const p = prev.activeProfile === 'manish' ? 'manish' : 'ranju';
-      const profileObj = prev[p] || {};
-      const target = profileObj.waterTargetMl || 2500;
-      const consumed = profileObj.waterConsumedMl || 0;
-      const nextWater = Math.min(target, consumed + amountMl);
-      
-      triggerCelebration('standard');
-
-      return {
-        ...prev,
-        [p]: {
-          ...profileObj,
-          waterConsumedMl: nextWater
+      const pid = prev.activeProfileId;
+      const updatedProfiles = prev.profiles.map(p => {
+        if (p.profileId === pid) {
+          const target = p.waterTargetMl || 2500;
+          const next = Math.min(target, (p.waterConsumedMl || 0) + amountMl);
+          return { ...p, waterConsumedMl: next };
         }
-      };
+        return p;
+      });
+      triggerCelebration('standard');
+      return { ...prev, profiles: updatedProfiles };
     });
   };
 
   const addWalkMinutes = (minutes = 30, withPartner = false) => {
     setState(prev => {
-      const p = prev.activeProfile === 'manish' ? 'manish' : 'ranju';
-      const profileObj = prev[p] || {};
-      
+      const pid = prev.activeProfileId;
+      const updatedProfiles = prev.profiles.map(p => {
+        if (p.profileId === pid) {
+          return {
+            ...p,
+            walkMinutesLogged: (p.walkMinutesLogged || 0) + minutes,
+            walkStepsLogged: (p.walkStepsLogged || 0) + (minutes * 120)
+          };
+        }
+        return p;
+      });
+
       triggerCelebration('standard');
 
       if (withPartner) {
         const updatedCoupleGoals = (prev.couple?.goals || []).map(g => g.id === 'cg1' ? { ...g, completed: true } : g);
         return {
           ...prev,
-          [p]: {
-            ...profileObj,
-            walkMinutesLogged: (profileObj.walkMinutesLogged || 0) + minutes,
-            walkStepsLogged: (profileObj.walkStepsLogged || 0) + (minutes * 120)
-          },
+          profiles: updatedProfiles,
           couple: {
             ...prev.couple,
             coupleWalkCompleted: true,
@@ -198,90 +221,45 @@ export const AppProvider = ({ children }) => {
         };
       }
 
-      return {
-        ...prev,
-        [p]: {
-          ...profileObj,
-          walkMinutesLogged: (profileObj.walkMinutesLogged || 0) + minutes,
-          walkStepsLogged: (profileObj.walkStepsLogged || 0) + (minutes * 120)
-        }
-      };
+      return { ...prev, profiles: updatedProfiles };
     });
   };
 
   const completeYogaSession = () => {
     setState(prev => {
       triggerCelebration('major');
-      return {
-        ...prev,
-        ranju: {
-          ...prev.ranju,
-          yogaSessionCompleted: true
+      const updatedProfiles = prev.profiles.map(p => {
+        if (p.profileId === prev.activeProfileId) {
+          return { ...p, yogaSessionCompleted: true };
         }
-      };
+        return p;
+      });
+      return { ...prev, profiles: updatedProfiles };
     });
   };
 
   const logMeal = (type, mealName) => {
     setState(prev => {
-      const p = prev.activeProfile === 'manish' ? 'manish' : 'ranju';
-      const profileObj = prev[p] || {};
-      triggerCelebration('standard');
-      return {
-        ...prev,
-        [p]: {
-          ...profileObj,
-          loggedMeals: {
-            ...(profileObj.loggedMeals || {}),
-            [type]: mealName
-          }
+      const pid = prev.activeProfileId;
+      const updatedProfiles = prev.profiles.map(p => {
+        if (p.profileId === pid) {
+          return {
+            ...p,
+            loggedMeals: { ...(p.loggedMeals || {}), [type]: mealName }
+          };
         }
-      };
+        return p;
+      });
+      triggerCelebration('standard');
+      return { ...prev, profiles: updatedProfiles };
     });
-  };
-
-  const sendAICoachMessage = (userText) => {
-    const p = state.activeProfile;
-    const userMsg = { sender: 'user', text: userText, timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
-    
-    let replyText = `I'm right here with you! Staying consistent brings long-term health.`;
-    const lower = userText.toLowerCase();
-
-    if (p === 'ranju') {
-      if (lower.includes('hair') || lower.includes('scalp') || lower.includes('fall')) {
-        replyText = "Ranju, your hair fall rating is currently Low! Continuing boiled egg protein, Vitamin D, and 20 mins Child's Pose directly strengthens hair root anchorage.";
-      } else if (lower.includes('water') || lower.includes('drink')) {
-        replyText = `Ranju, you've drunk ${state.ranju?.waterConsumedMl || 0} ml of water out of your 2,500 ml goal today. Keep a bottle nearby!`;
-      } else if (lower.includes('manish') || lower.includes('husband') || lower.includes('walk')) {
-        replyText = "Taking Manish for the 6:15 PM sunset walk builds joint motivation and helps him reach his 8,000 step fat loss goal!";
-      }
-    } else if (p === 'manish') {
-      if (lower.includes('weight') || lower.includes('fat') || lower.includes('steps')) {
-        replyText = `Manish, you've logged ${state.manish?.walkStepsLogged || 0} steps out of your 8,000 steps goal! Keep your lunch high-fiber to boost metabolism and burn fat.`;
-      } else if (lower.includes('boil') || lower.includes('skin') || lower.includes('heat')) {
-        replyText = "To reduce recurring skin boils, drink 3.0L detox water (cucumber/mint) and avoid fried snacks & refined sugar.";
-      } else if (lower.includes('ranju') || lower.includes('wife')) {
-        replyText = "Walking with Ranju at 6:15 PM sunset completes your step target and supports her core fitness!";
-      }
-    }
-
-    const aiMsg = { sender: 'ai', text: replyText, timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
-
-    setState(prev => ({
-      ...prev,
-      aiMessages: {
-        ...prev.aiMessages,
-        [p]: [...(prev.aiMessages?.[p] || []), userMsg, aiMsg]
-      }
-    }));
   };
 
   const resetDay = () => {
     setState(prev => ({
       ...prev,
-      ranju: { ...prev.ranju, waterConsumedMl: 0, walkMinutesLogged: 0, yogaSessionCompleted: false, loggedMeals: { breakfast: null, lunch: null, dinner: null } },
-      manish: { ...prev.manish, waterConsumedMl: 0, walkStepsLogged: 0, loggedMeals: { breakfast: null, lunch: null, dinner: null } },
-      couple: { ...prev.couple, coupleWalkCompleted: false, coupleDinnerCompleted: false }
+      isOnboarded: false, // reset onboarding to test fresh setup
+      profiles: defaultInitialState.profiles
     }));
     triggerCelebration('major');
   };
@@ -290,6 +268,9 @@ export const AppProvider = ({ children }) => {
     <AppContext.Provider value={{
       ...state,
       currentProfileData,
+      isManishOrHusband,
+      activeProfile: state.activeProfileId,
+      activeProfileId: state.activeProfileId,
       timeline: activeTimeline,
       missions: activeMissions,
       waterConsumedMl: currentProfileData?.waterConsumedMl || 0,
@@ -301,13 +282,13 @@ export const AppProvider = ({ children }) => {
       activeTab,
       setActiveTab,
       switchProfile,
+      setDynamicProfilesAndCompleteOnboarding,
       toggleMission,
       toggleTimelineItem,
       addWater,
       addWalkMinutes,
       completeYogaSession,
       logMeal,
-      sendAICoachMessage,
       resetDay
     }}>
       {children}
