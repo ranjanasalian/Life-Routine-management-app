@@ -2,6 +2,33 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { Bot, Send, Sparkles, Droplets, Footprints, Utensils, Play, Settings } from 'lucide-react';
 
+const getShortSummaryText = (concerns = [], goals = []) => {
+  const cArr = Array.isArray(concerns) ? concerns : [concerns];
+  const gArr = Array.isArray(goals) ? goals : [goals];
+  const combined = [...cArr, ...gArr].join(' ').toLowerCase();
+
+  const tags = [];
+  if (combined.includes('hair') || combined.includes('scalp')) tags.push('Hair Health & Root Strength');
+  if (combined.includes('skin') || combined.includes('glow') || combined.includes('dull')) tags.push('Natural Skin Glow');
+  if (combined.includes('boil') || combined.includes('heat')) tags.push('Boil Reduction & Body Detox');
+  if (combined.includes('weight') || combined.includes('fat') || combined.includes('kg')) tags.push('Gradual Weight Loss');
+  if (combined.includes('sleep') || combined.includes('bed') || combined.includes('late')) tags.push('Restorative Sleep Schedule');
+  if (combined.includes('water') || combined.includes('hydrate')) tags.push('Daily Hydration Target');
+  if (combined.includes('allergy') || combined.includes('sneeze')) tags.push('Allergy Care');
+
+  if (tags.length === 0) {
+    return 'Today is tailored specifically for your target wellness goals and daily routine.';
+  }
+
+  if (tags.length === 1) {
+    return `Today's tailored plan actively addresses: ${tags[0]}.`;
+  }
+  if (tags.length === 2) {
+    return `Today's tailored plan actively addresses: ${tags[0]} and ${tags[1]}.`;
+  }
+  return `Today's tailored plan actively addresses: ${tags.slice(0, -1).join(', ')}, and ${tags[tags.length - 1]}.`;
+};
+
 export const HomeAICenterpiece = () => {
   const { 
     currentProfileData = {}, 
@@ -22,6 +49,8 @@ export const HomeAICenterpiece = () => {
   const lastPct = currentProfileData?.yesterdayCompletionPct || 82;
   const concerns = currentProfileData?.healthConcerns || [];
   const goals = currentProfileData?.healthGoals || [];
+
+  const summarySentence = getShortSummaryText(concerns, goals);
 
   const currentAction = (timeline || []).find(item => !item.completed) || {
     title: "All Daily Goals Complete 🎉",
@@ -52,10 +81,10 @@ export const HomeAICenterpiece = () => {
   };
 
   const sampleSuggestions = [
-    "How do I improve my hair health & reduce hair fall?",
-    "How to reduce skin boils & internal heat?",
-    "Check my water intake goal for today",
-    "Tips for gradual fat loss & 8,000 steps"
+    "Tell me how to start my day right now",
+    "How to reverse hair fall & strengthen scalp?",
+    "How to reduce skin boils & body heat?",
+    "Check my daily water goal"
   ];
 
   return (
@@ -90,15 +119,13 @@ export const HomeAICenterpiece = () => {
         </div>
 
         {/* Yesterday Summary Banner */}
-        <div className="p-4 rounded-2xl bg-slate-950/80 border border-white/5 space-y-1">
+        <div className="p-4 rounded-2xl bg-slate-950/80 border border-white/5 space-y-1.5">
           <div className="flex items-center justify-between text-xs">
             <span className="text-slate-400 font-medium">Yesterday's Routine Completion:</span>
-            <strong className="text-emerald-400 font-black">{lastPct}%</strong>
+            <strong className="text-emerald-400 font-black text-sm">{lastPct}%</strong>
           </div>
           <p className="text-xs text-slate-300 font-medium leading-relaxed">
-            {concerns.length > 0 
-              ? `Today's tailored plan actively addresses: ${concerns.slice(0, 3).join(', ')}.` 
-              : `Great progress! Today is tailored specifically for your target health goals.`}
+            {summarySentence}
           </p>
         </div>
 
