@@ -27,6 +27,18 @@ const defaultInitialState = {
   notifications: []
 };
 
+// Pronoun cleaner helper
+const cleanPronouns = (str) => {
+  if (!str || typeof str !== 'string') return '';
+  return str
+    .replace(/My Health Goals/gi, '')
+    .replace(/\bmy\b/gi, 'your')
+    .replace(/\bmine\b/gi, 'yours')
+    .replace(/\bI\b/g, 'you')
+    .replace(/\s+/g, ' ')
+    .trim();
+};
+
 export const AppProvider = ({ children }) => {
   const [state, setState] = useState(() => loadAppState(defaultInitialState));
   const [activeTab, setActiveTab] = useState('today');
@@ -229,8 +241,9 @@ export const AppProvider = ({ children }) => {
     const pid = state.activeProfileId || 'primary_user';
     const profileObj = (state.profiles || []).find(p => p.profileId === pid) || state.profiles[0] || {};
     const name = profileObj.userName || 'there';
-    const concerns = (profileObj.healthConcerns || []).join(', ');
-    const goals = (profileObj.healthGoals || []).join(', ');
+    const rawGoals = Array.isArray(profileObj.healthGoals) ? profileObj.healthGoals.join(', ') : (profileObj.healthGoals || '');
+    const cleanGoals = cleanPronouns(rawGoals);
+
     const water = profileObj.waterConsumedMl || 0;
     const waterTarget = profileObj.waterTargetMl || 2500;
     const walk = profileObj.walkStepsLogged || 0;
@@ -239,23 +252,59 @@ export const AppProvider = ({ children }) => {
     const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const userMsg = { sender: 'user', text: userText.trim(), timestamp };
 
-    let replyText = `I'm right here with you, ${name}! Staying consistent with your routine brings long-term health and energy.`;
     const lower = userText.toLowerCase();
+    let replyText = `I'm right here with you, ${name}! Keeping up with your daily timeline will help you achieve ${cleanGoals || 'your target wellness goals'}.`;
 
-    if (lower.includes('hair') || lower.includes('scalp') || lower.includes('fall')) {
-      replyText = `${name}, to help with hair health and root strength, continue your daily protein intake, Vitamin D, and 20-min restorative yoga. Reducing stress and sleeping before 10:45 PM directly strengthens hair anchorage.`;
-    } else if (lower.includes('boil') || lower.includes('heat') || lower.includes('skin')) {
-      replyText = `${name}, for skin health and reducing internal body heat, drink 3.0L detox water (cucumber/mint/lemon) and avoid fried snacks & refined sugars. Flushes metabolic toxins effectively.`;
-    } else if (lower.includes('water') || lower.includes('drink') || lower.includes('hydrate')) {
-      replyText = `${name}, you've logged ${water} ml of water out of your ${waterTarget} ml daily target. Drink a glass right now to stay hydrated!`;
-    } else if (lower.includes('walk') || lower.includes('step') || lower.includes('weight') || lower.includes('fat')) {
-      replyText = `${name}, you've logged ${walk} steps out of your ${walkTarget} daily step target! Walking regularly mobilizes visceral fat and lowers blood glucose spikes. Keep going!`;
-    } else if (lower.includes('sleep') || lower.includes('tired') || lower.includes('exhausted')) {
-      replyText = `${name}, restorative sleep is essential. Turn off screens at 10:00 PM and prepare for bedtime. Getting 7.5 hours of sleep regulates appetite and serotonin.`;
-    } else if (lower.includes('meal') || lower.includes('food') || lower.includes('eat') || lower.includes('protein')) {
-      replyText = `${name}, based on your profile goals (${goals || 'wellness'}), aim for high-protein meals with complex fiber to keep your energy high and insulin stable.`;
-    } else {
-      replyText = `Thank you for sharing, ${name}! I've logged this in your permanent health memory. Keeping up with your daily timeline will help you achieve ${goals || 'your wellness goals'}.`;
+    // Intent 1: Morning Guidance / How to start day
+    if (
+      lower.includes('start my day') || 
+      lower.includes('what to do today') || 
+      lower.includes('tell me what to do') || 
+      lower.includes('how to start') || 
+      lower.includes('morning') || 
+      lower.includes('routine') || 
+      lower.includes('guide me')
+    ) {
+      replyText = `Good Morning, ${name}! 🌿 Here is how to start your day for maximum energy and health:
+
+1. 💧 Hydrate First: Drink 500 ml warm water right after waking up to flush metabolic toxins.
+2. 🏃‍♀️ Morning Walk: Step out for a 30-minute morning walk to boost blood circulation and serotonin.
+3. 🥗 Protein Breakfast: Eat a protein-rich breakfast (e.g. Sprouts salad + Eggs or Paneer) to nourish hair roots and sustain energy.
+4. 🧘‍♀️ Restorative Routine: Complete 20 mins of yoga or stretching at 5:30 PM to manage stress and support root health.
+
+Follow your Life Timeline step-by-step today, and I will guide you along the way!`;
+    } 
+    // Intent 2: Hair & Scalp
+    else if (lower.includes('hair') || lower.includes('scalp') || lower.includes('fall')) {
+      replyText = `${name}, to strengthen your hair roots and reverse hair fall:
+
+1. Protein Focus: Eat boiled eggs, dal, or sprouts today for essential keratin amino acids.
+2. Micronutrients: Ensure Vitamin D, B12, Iron, and Zinc intake.
+3. Scalp Circulation: Practice 20 mins of restorative yoga (Downward Dog & Child's Pose) at 5:30 PM.
+4. Early Bedtime: Sleep before 10:45 PM for overnight cell regeneration.`;
+    } 
+    // Intent 3: Skin & Boils
+    else if (lower.includes('boil') || lower.includes('heat') || lower.includes('skin') || lower.includes('glow')) {
+      replyText = `${name}, for skin health and reducing internal body heat:
+
+1. 3.0L Detox Water: Drink cucumber, mint, and lemon infused water to cool body heat.
+2. Zero Processed Sugar: Avoid fried snacks and refined sugars that trigger skin pore inflammation.
+3. Anti-Inflammatory Lunch: Eat raw cucumber/tomato salad with lean protein.`;
+    } 
+    // Intent 4: Hydration
+    else if (lower.includes('water') || lower.includes('drink') || lower.includes('hydrate')) {
+      replyText = `${name}, you have logged ${water} ml of water out of your ${waterTarget} ml daily target. Drink a glass of water right now to stay on track!`;
+    } 
+    // Intent 5: Walking / Weight Loss
+    else if (lower.includes('walk') || lower.includes('step') || lower.includes('weight') || lower.includes('fat')) {
+      replyText = `${name}, to accelerate weight loss and reach your target:
+
+1. 8,000 Steps Target: Log a 4,000-step morning walk and join your partner for the 6:15 PM sunset walk.
+2. Light Dinner: Keep dinner protein and veggie focused to burn fat overnight.`;
+    } 
+    // Intent 6: Sleep
+    else if (lower.includes('sleep') || lower.includes('tired') || lower.includes('exhausted')) {
+      replyText = `${name}, restorative sleep is key. Turn off screens at 10:00 PM and prepare for bedtime by 10:45 PM. Getting 7.5 hours of sleep regulates appetite and lowers cortisol.`;
     }
 
     const aiMsg = { sender: 'ai', text: replyText, timestamp };
