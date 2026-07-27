@@ -4,6 +4,7 @@ import { MANISH_TIMELINE, MANISH_MISSIONS, MANISH_MEALS, MANISH_JOURNEYS } from 
 import { COUPLE_GOALS, COUPLE_MILESTONES } from '../data/coupleData';
 import { loadAppState, saveAppState } from '../utils/storage';
 import { triggerCelebration } from '../utils/confetti';
+import { saveChatToDB } from '../api/backendApi';
 
 const AppContext = createContext(null);
 
@@ -20,6 +21,8 @@ const defaultInitialState = {
     goals: COUPLE_GOALS,
     milestones: COUPLE_MILESTONES
   },
+
+  aiMessages: {},
 
   notifications: []
 };
@@ -40,7 +43,7 @@ export const AppProvider = ({ children }) => {
     setState(prev => {
       const formatted = profilesArray.map((p, i) => {
         const isPrimary = p.relationship === 'primary' || i === 0;
-        const pid = isPrimary ? 'primary_user' : `family_${p.relationship}_${Date.now()}`;
+        const pid = isPrimary ? 'primary_user' : `family_${p.relationship}_${Date.now()}_${i}`;
         const isManishOrHusband = (p.userName && p.userName.toLowerCase().includes('manish')) || p.relationship === 'husband';
         
         return {
@@ -54,17 +57,18 @@ export const AppProvider = ({ children }) => {
           wakeTime: p.wakeTime || '7:30 AM',
           sleepTime: p.sleepTime || '10:45 PM',
           waterConsumedMl: 1000,
-          waterTargetMl: parseInt(p.waterTargetMl) || 2500,
+          waterTargetMl: parseInt(p.waterTargetMl) || (isManishOrHusband ? 3000 : 2500),
           walkMinutesLogged: 15,
-          walkStepsLogged: 3500,
-          healthConcerns: typeof p.healthConcerns === 'string' ? [p.healthConcerns] : (p.healthConcerns || []),
-          healthGoals: typeof p.healthGoals === 'string' ? [p.healthGoals] : (p.healthGoals || []),
+          walkStepsLogged: isManishOrHusband ? 4500 : 2500,
+          walkStepsTarget: isManishOrHusband ? 8000 : 5000,
+          healthConcerns: typeof p.healthConcerns === 'string' ? p.healthConcerns.split(',').map(s => s.trim()).filter(Boolean) : (p.healthConcerns || []),
+          healthGoals: typeof p.healthGoals === 'string' ? p.healthGoals.split(',').map(s => s.trim()).filter(Boolean) : (p.healthGoals || []),
           timeline: isManishOrHusband ? MANISH_TIMELINE : RANJU_TIMELINE,
           missions: isManishOrHusband ? MANISH_MISSIONS : RANJU_MISSIONS,
           mealsData: isManishOrHusband ? MANISH_MEALS : RANJU_MEALS,
           journeys: isManishOrHusband ? MANISH_JOURNEYS : RANJU_JOURNEYS,
-          yesterdayCompletionPct: 82,
-          streakDays: 7
+          yesterdayCompletionPct: isManishOrHusband ? 85 : 82,
+          streakDays: isManishOrHusband ? 8 : 7
         };
       });
 
@@ -75,6 +79,7 @@ export const AppProvider = ({ children }) => {
         isOnboarded: true,
         activeProfileId: formatted[0]?.profileId || 'primary_user',
         profiles: formatted,
+        aiMessages: {},
         notifications: []
       };
     });
@@ -218,11 +223,64 @@ export const AppProvider = ({ children }) => {
     });
   };
 
+  const sendAICoachMessage = (userText) => {
+    if (!userText || !userText.trim()) return;
+
+    const pid = state.activeProfileId || 'primary_user';
+    const profileObj = (state.profiles || []).find(p => p.profileId === pid) || state.profiles[0] || {};
+    const name = profileObj.userName || 'there';
+    const concerns = (profileObj.healthConcerns || []).join(', ');
+    const goals = (profileObj.healthGoals || []).join(', ');
+    const water = profileObj.waterConsumedMl || 0;
+    const waterTarget = profileObj.waterTargetMl || 2500;
+    const walk = profileObj.walkStepsLogged || 0;
+    const walkTarget = profileObj.walkStepsTarget || 8000;
+
+    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const userMsg = { sender: 'user', text: userText.trim(), timestamp };
+
+    let replyText = `I'm right here with you, ${name}! Staying consistent with your routine brings long-term health and energy.`;
+    const lower = userText.toLowerCase();
+
+    if (lower.includes('hair') || lower.includes('scalp') || lower.includes('fall')) {
+      replyText = `${name}, to help with hair health and root strength, continue your daily protein intake, Vitamin D, and 20-min restorative yoga. Reducing stress and sleeping before 10:45 PM directly strengthens hair anchorage.`;
+    } else if (lower.includes('boil') || lower.includes('heat') || lower.includes('skin')) {
+      replyText = `${name}, for skin health and reducing internal body heat, drink 3.0L detox water (cucumber/mint/lemon) and avoid fried snacks & refined sugars. Flushes metabolic toxins effectively.`;
+    } else if (lower.includes('water') || lower.includes('drink') || lower.includes('hydrate')) {
+      replyText = `${name}, you've logged ${water} ml of water out of your ${waterTarget} ml daily target. Drink a glass right now to stay hydrated!`;
+    } else if (lower.includes('walk') || lower.includes('step') || lower.includes('weight') || lower.includes('fat')) {
+      replyText = `${name}, you've logged ${walk} steps out of your ${walkTarget} daily step target! Walking regularly mobilizes visceral fat and lowers blood glucose spikes. Keep going!`;
+    } else if (lower.includes('sleep') || lower.includes('tired') || lower.includes('exhausted')) {
+      replyText = `${name}, restorative sleep is essential. Turn off screens at 10:00 PM and prepare for bedtime. Getting 7.5 hours of sleep regulates appetite and serotonin.`;
+    } else if (lower.includes('meal') || lower.includes('food') || lower.includes('eat') || lower.includes('protein')) {
+      replyText = `${name}, based on your profile goals (${goals || 'wellness'}), aim for high-protein meals with complex fiber to keep your energy high and insulin stable.`;
+    } else {
+      replyText = `Thank you for sharing, ${name}! I've logged this in your permanent health memory. Keeping up with your daily timeline will help you achieve ${goals || 'your wellness goals'}.`;
+    }
+
+    const aiMsg = { sender: 'ai', text: replyText, timestamp };
+
+    setState(prev => {
+      const existing = prev.aiMessages?.[pid] || [];
+      return {
+        ...prev,
+        aiMessages: {
+          ...prev.aiMessages,
+          [pid]: [...existing, userMsg, aiMsg]
+        }
+      };
+    });
+
+    saveChatToDB(pid, 'user', userText.trim());
+    saveChatToDB(pid, 'ai', replyText);
+  };
+
   const resetDay = () => {
     setState(prev => ({
       ...prev,
       isOnboarded: false,
       profiles: [],
+      aiMessages: {},
       notifications: []
     }));
     triggerCelebration('major');
@@ -253,6 +311,7 @@ export const AppProvider = ({ children }) => {
       addWalkMinutes,
       completeYogaSession,
       logMeal,
+      sendAICoachMessage,
       resetDay
     }}>
       {children}

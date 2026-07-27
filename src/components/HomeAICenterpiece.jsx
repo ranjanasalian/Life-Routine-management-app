@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { Bot, Send, Sparkles, Droplets, Footprints, Utensils, ShieldCheck, Flame, ArrowRight, Play, Settings } from 'lucide-react';
+import { Bot, Send, Sparkles, Droplets, Footprints, Utensils, Play, Settings } from 'lucide-react';
 
 export const HomeAICenterpiece = () => {
   const { 
@@ -29,17 +29,34 @@ export const HomeAICenterpiece = () => {
     time: "Now"
   };
 
-  const currentProfileMsgs = aiMessages[activeProfileId] || [
-    { sender: 'ai', text: `Good Morning, ${userName} ${avatar}! I'm right here with you today. Your goals focus on ${goals.slice(0, 2).join(' & ') || 'wellness & routine'}. What would you like to focus on right now?`, timestamp: '7:30 AM' }
-  ];
+  const currentProfileMsgs = (aiMessages && aiMessages[activeProfileId] && aiMessages[activeProfileId].length > 0)
+    ? aiMessages[activeProfileId]
+    : [
+        { 
+          sender: 'ai', 
+          text: `Good Morning, ${userName} ${avatar}! I'm your AI Wellness Companion. Your goals focus on ${goals.slice(0, 2).join(' & ') || 'wellness & routine'}. Ask me anything or tap a suggestion pill below!`, 
+          timestamp: '7:30 AM' 
+        }
+      ];
 
   const handleSendChat = (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     if (!chatInput.trim()) return;
     const txt = chatInput.trim();
     setChatInput('');
     sendAICoachMessage(txt);
   };
+
+  const handleSuggestionClick = (suggestionText) => {
+    sendAICoachMessage(suggestionText);
+  };
+
+  const sampleSuggestions = [
+    "How do I improve my hair health & reduce hair fall?",
+    "How to reduce skin boils & internal heat?",
+    "Check my water intake goal for today",
+    "Tips for gradual fat loss & 8,000 steps"
+  ];
 
   return (
     <div className="space-y-6 w-full">
@@ -94,7 +111,7 @@ export const HomeAICenterpiece = () => {
           <p className="text-xs text-slate-300 font-medium">{currentAction.description}</p>
         </div>
 
-        {/* Today's Mission 5 Priorities */}
+        {/* Today's Mission Priorities */}
         <div className="space-y-3">
           <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Today's AI Priorities:</h4>
           <div className="space-y-2">
@@ -142,19 +159,32 @@ export const HomeAICenterpiece = () => {
       <div className="ios-glass-card p-5 border-white/10 space-y-4">
         <div className="flex items-center gap-2 pb-2 border-b border-white/10">
           <Bot className="w-5 h-5 text-emerald-400" />
-          <h3 className="text-sm font-bold text-white font-display">Chat with your AI Companion</h3>
+          <h3 className="text-sm font-bold text-white font-display">Chat with AI Companion ({userName})</h3>
+        </div>
+
+        {/* Quick Suggestion Pills */}
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1">
+          {sampleSuggestions.map((s, idx) => (
+            <button
+              key={idx}
+              onClick={() => handleSuggestionClick(s)}
+              className="px-3 py-1.5 rounded-full bg-slate-900 hover:bg-slate-800 text-slate-300 border border-white/10 text-[10px] font-medium whitespace-nowrap transition-all"
+            >
+              💡 {s}
+            </button>
+          ))}
         </div>
 
         {/* Messages List */}
-        <div className="space-y-3 max-h-60 overflow-y-auto no-scrollbar pr-1">
+        <div className="space-y-3 max-h-72 overflow-y-auto no-scrollbar pr-1 pt-1">
           {currentProfileMsgs.map((msg, i) => (
             <div key={i} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[85%] p-3.5 rounded-2xl text-xs space-y-1 ${
                 msg.sender === 'user' 
-                  ? 'bg-emerald-500/20 border border-emerald-500/30 text-emerald-100 rounded-br-none' 
+                  ? 'bg-emerald-500/20 border border-emerald-500/30 text-emerald-100 rounded-br-none font-medium' 
                   : 'bg-slate-950 border border-white/10 text-slate-200 rounded-bl-none'
               }`}>
-                <p className="leading-relaxed font-medium">{msg.text}</p>
+                <p className="leading-relaxed">{msg.text}</p>
                 <span className="text-[9px] text-slate-500 block text-right font-mono">{msg.timestamp}</span>
               </div>
             </div>
@@ -167,7 +197,7 @@ export const HomeAICenterpiece = () => {
             type="text"
             value={chatInput}
             onChange={(e) => setChatInput(e.target.value)}
-            placeholder={`Ask AI Companion for advice or report a symptom...`}
+            placeholder={`Ask ${userName}'s AI Companion for suggestions...`}
             className="flex-1 px-4 py-3 rounded-2xl bg-slate-950 border border-white/10 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-emerald-500 font-medium"
           />
           <button
