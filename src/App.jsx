@@ -1,75 +1,85 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { Header } from './components/Header';
-import { CurrentActionCard } from './components/CurrentActionCard';
-import { TodayMission } from './components/TodayMission';
+import { HomeAICenterpiece } from './components/HomeAICenterpiece';
 import { LifeTimeline } from './components/LifeTimeline';
-import { WaterTracker } from './components/WaterTracker';
-import { WalkTracker } from './components/WalkTracker';
-import { NutritionGuide } from './components/NutritionGuide';
-import { HealthJourneys } from './components/HealthJourneys';
-import { CoupleMode } from './components/CoupleMode';
-import { AIMemoryLog } from './components/AIMemoryLog';
+import { SettingsView } from './components/SettingsView';
+import { ConversationHistoryView } from './components/ConversationHistoryView';
+import { HealthTimelineView } from './components/HealthTimelineView';
+import { NotificationCentreView } from './components/NotificationCentreView';
+import { AIMemoryPrivacyView } from './components/AIMemoryPrivacyView';
+import { PreLaunchReviewSummary } from './components/PreLaunchReviewSummary';
 import { AIOnboardingInterview } from './components/AIOnboardingInterview';
+import { CoupleMode } from './components/CoupleMode';
+import { NutritionGuide } from './components/NutritionGuide';
 import { BottomNav } from './components/BottomNav';
 import { NotificationToast } from './components/NotificationToast';
 
 const MainContent = () => {
-  const { activeTab, activeProfileId, isOnboarded } = useApp();
+  const { activeTab, activeProfileId, isOnboarded, setDynamicProfilesAndCompleteOnboarding } = useApp();
+  const [reviewProfiles, setReviewProfiles] = useState(null);
 
-  // Fullscreen Onboarding View (hides Header, BottomNav & Notifications)
-  if (!isOnboarded) {
-    return <AIOnboardingInterview />;
+  // Fullscreen Onboarding Interview
+  if (!isOnboarded && !reviewProfiles) {
+    return (
+      <AIOnboardingInterview 
+        onComplete={(profilesArray) => {
+          setReviewProfiles(profilesArray);
+        }} 
+      />
+    );
   }
 
-  // If Couple Mode profile is active and on today/couple tab, render CoupleMode
+  // Pre-Launch Review Summary Screen
+  if (!isOnboarded && reviewProfiles) {
+    return (
+      <PreLaunchReviewSummary
+        profilesArray={reviewProfiles}
+        onConfirmLaunch={(confirmedProfiles) => {
+          setDynamicProfilesAndCompleteOnboarding(confirmedProfiles);
+          setReviewProfiles(null);
+        }}
+      />
+    );
+  }
+
+  // If Couple Mode is active
   if (activeProfileId === 'couple' && (activeTab === 'today' || activeTab === 'couple')) {
     return (
-      <main className="max-w-xl mx-auto px-4 md:px-6 py-4 space-y-6 pb-28">
+      <main className="max-w-xl mx-auto px-4 sm:px-6 py-4 space-y-6 pb-28">
         <CoupleMode />
       </main>
     );
   }
 
   return (
-    <main className="max-w-xl mx-auto px-4 md:px-6 py-4 space-y-6 pb-28">
+    <main className="max-w-xl mx-auto px-4 sm:px-6 py-4 space-y-6 pb-28">
       
-      {/* Today View */}
-      {activeTab === 'today' && (
-        <>
-          <CurrentActionCard />
-          <TodayMission />
-          <LifeTimeline />
-          <WaterTracker />
-          <WalkTracker />
-        </>
-      )}
+      {/* Home AI Centerpiece */}
+      {activeTab === 'today' && <HomeAICenterpiece />}
 
-      {/* Schedule / Flow View */}
-      {activeTab === 'schedule' && (
-        <>
-          <CurrentActionCard />
-          <LifeTimeline />
-        </>
-      )}
+      {/* Timeline View */}
+      {activeTab === 'schedule' && <LifeTimeline />}
 
-      {/* Journeys View */}
-      {activeTab === 'journeys' && (
-        <HealthJourneys />
-      )}
+      {/* Conversation History View */}
+      {activeTab === 'history' && <ConversationHistoryView />}
 
-      {/* Couple View */}
-      {activeTab === 'couple' && (
-        <CoupleMode />
-      )}
-
-      {/* Health / Memory / Nutrition View */}
+      {/* Health Timeline View */}
       {activeTab === 'health' && (
         <div className="space-y-6">
-          <AIMemoryLog />
+          <HealthTimelineView />
           <NutritionGuide />
         </div>
       )}
+
+      {/* Settings View */}
+      {activeTab === 'settings' && <SettingsView />}
+
+      {/* Notification Centre View */}
+      {activeTab === 'notifications' && <NotificationCentreView />}
+
+      {/* AI Memory Privacy View */}
+      {activeTab === 'privacy' && <AIMemoryPrivacyView />}
 
     </main>
   );

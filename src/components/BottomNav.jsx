@@ -1,16 +1,16 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
-import { Sun, Calendar, Award, Users, Sparkles } from 'lucide-react';
+import { Sun, Calendar, MessageSquare, Heart, Settings } from 'lucide-react';
 
 export const BottomNav = () => {
-  const { activeTab, setActiveTab, activeProfile } = useApp();
+  const { activeTab, setActiveTab } = useApp();
 
   const navItems = [
-    { id: 'today', label: 'Today', icon: Sun },
-    { id: 'schedule', label: 'Flow', icon: Calendar },
-    { id: 'journeys', label: 'Journeys', icon: Award },
-    { id: 'couple', label: 'Couple', icon: Users },
-    { id: 'health', label: 'Health', icon: Sparkles }
+    { id: 'today', label: 'Home AI', icon: Sun },
+    { id: 'schedule', label: 'Timeline', icon: Calendar },
+    { id: 'history', label: 'History', icon: MessageSquare },
+    { id: 'health', label: 'Health', icon: Heart },
+    { id: 'settings', label: 'Settings', icon: Settings }
   ];
 
   return (
@@ -19,7 +19,7 @@ export const BottomNav = () => {
         <nav className="ios-glass-card p-2 border-white/10 flex items-center justify-around shadow-2xl bg-slate-950/80 backdrop-blur-3xl rounded-full">
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = activeTab === item.id || (item.id === 'couple' && activeProfile === 'couple') || (item.id === 'health' && (activeTab === 'yoga' || activeTab === 'nutrition' || activeTab === 'wellness' || activeTab === 'ai_coach' || activeTab === 'progress'));
+            const isActive = activeTab === item.id;
             
             return (
               <button

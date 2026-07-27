@@ -1,13 +1,14 @@
 import express from 'express';
 import { Profile } from '../models/Profile.js';
 import { AIMemory } from '../models/AIMemory.js';
-import { Timeline } from '../models/Timeline.js';
+import { ChatHistory } from '../models/ChatHistory.js';
+import { HealthLog } from '../models/HealthLog.js';
 import { RANJU_TIMELINE } from '../../src/data/ranjuData.js';
 import { MANISH_TIMELINE } from '../../src/data/manishData.js';
 
 const router = express.Router();
 
-// Dynamic Onboarding API: Accepts array of profiles (Primary User + optional Family Members)
+// Onboarding API: Accepts array of profiles
 router.post('/onboard', async (req, res) => {
   try {
     const { profilesData } = req.body;
@@ -18,14 +19,14 @@ router.post('/onboard', async (req, res) => {
 
     const createdProfiles = [];
 
-    for (let i = 0; i < profilesData.length; i++) {
+    for (let i = 0; i < Math.min(5, profilesData.length); i++) {
       const p = profilesData[i];
       const isPrimary = p.relationship === 'primary' || i === 0;
-      const pid = isPrimary ? 'primary_user' : `family_${p.relationship}_${Date.now()}`;
+      const pid = isPrimary ? 'primary_user' : `family_${p.relationship}_${Date.now()}_${i}`;
 
-      const avatar = isPrimary ? '🌿' : (p.relationship === 'husband' ? '⚡' : p.relationship === 'wife' ? '🌸' : '⭐');
+      const isHusband = (p.userName && p.userName.toLowerCase().includes('manish')) || p.relationship === 'husband';
+      const avatar = isPrimary ? '🌿' : (isHusband ? '⚡' : p.relationship === 'wife' ? '🌸' : '⭐');
 
-      // Parse health concerns into array
       const concernsArray = typeof p.healthConcerns === 'string' 
         ? p.healthConcerns.split(',').map(s => s.trim()).filter(Boolean)
         : (Array.isArray(p.healthConcerns) ? p.healthConcerns : []);
@@ -34,11 +35,10 @@ router.post('/onboard', async (req, res) => {
         ? p.healthGoals.split(',').map(s => s.trim()).filter(Boolean)
         : (Array.isArray(p.healthGoals) ? p.healthGoals : []);
 
-      // Nutrient focus logic
       let focusNutrients = ['Protein', 'Fiber', 'Vitamin D', 'Vitamin B12', 'Zinc', 'Omega-3', 'Vitamin C'];
       if (concernsArray.some(c => c.toLowerCase().includes('hair') || c.toLowerCase().includes('skin'))) {
         focusNutrients = ['Protein', 'Iron', 'Vitamin D', 'Vitamin B12', 'Zinc', 'Omega-3', 'Vitamin C'];
-      } else if (concernsArray.some(c => c.toLowerCase().includes('weight') || c.toLowerCase().includes('fat') || c.toLowerCase().includes('boil'))) {
+      } else if (concernsArray.some(c => c.toLowerCase().includes('weight') || c.toLowerCase().includes('boil'))) {
         focusNutrients = ['Protein', 'Fiber', 'Healthy Fats', 'Metabolic Antioxidants'];
       }
 
@@ -81,10 +81,10 @@ router.post('/onboard', async (req, res) => {
 
       createdProfiles.push(doc);
 
-      // Log permanent memory note in MongoDB
+      // Log initial memory note in MongoDB
       await AIMemory.create({
         profileId: pid,
-        note: `Onboarding completed for ${doc.userName} (${doc.relationship}). Concerns logged: ${concernsArray.join(', ') || 'General health & routine'}. Goals: ${goalsArray.join(', ') || 'Overall fitness'}. Notes: ${doc.additionalNotes || 'None'}.`,
+        note: `Profile initialized for ${doc.userName} (${doc.relationship}). Goals: ${goalsArray.join(', ')}. Concerns: ${concernsArray.join(', ')}.`,
         category: 'conversation'
       });
     }
@@ -96,7 +96,16 @@ router.post('/onboard', async (req, res) => {
   }
 });
 
-// Update Profile API
+// CRUD Profiles
+router.get('/profiles', async (req, res) => {
+  try {
+    const profiles = await Profile.find().sort({ createdAt: 1 });
+    return res.status(200).json({ success: true, profiles });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 router.put('/profile/:profileId', async (req, res) => {
   try {
     const updated = await Profile.findOneAndUpdate(
@@ -110,11 +119,70 @@ router.put('/profile/:profileId', async (req, res) => {
   }
 });
 
-// Get all profiles
-router.get('/profiles', async (req, res) => {
+router.delete('/profile/:profileId', async (req, res) => {
   try {
-    const profiles = await Profile.find().sort({ createdAt: 1 });
-    return res.status(200).json({ success: true, profiles });
+    await Profile.deleteOne({ profileId: req.params.profileId });
+    await AIMemory.deleteMany({ profileId: req.params.profileId });
+    return res.status(200).json({ success: true });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Chat History API
+router.get('/chats/:profileId', async (req, res) => {
+  try {
+    const chats = await ChatHistory.find({ profileId: req.params.profileId }).sort({ createdAt: 1 });
+    return res.status(200).json({ success: true, chats });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.post('/chats', async (req, res) => {
+  try {
+    const { profileId, sender, text } = req.body;
+    const msg = await ChatHistory.create({ profileId, sender, text });
+    return res.status(200).json({ success: true, chat: msg });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Health Logs API (Health Timeline)
+router.get('/healthlogs/:profileId', async (req, res) => {
+  try {
+    const logs = await HealthLog.find({ profileId: req.params.profileId }).sort({ createdAt: -1 });
+    return res.status(200).json({ success: true, logs });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.post('/healthlogs', async (req, res) => {
+  try {
+    const { profileId, logType, value, notes } = req.body;
+    const log = await HealthLog.create({ profileId, logType, value, notes });
+    return res.status(200).json({ success: true, log });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Memory Privacy CRUD API
+router.delete('/memory/:memoryId', async (req, res) => {
+  try {
+    await AIMemory.findByIdAndDelete(req.params.memoryId);
+    return res.status(200).json({ success: true });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.delete('/memory/clear/:profileId', async (req, res) => {
+  try {
+    await AIMemory.deleteMany({ profileId: req.params.profileId });
+    return res.status(200).json({ success: true });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
   }

@@ -2,20 +2,13 @@ import React from 'react';
 import { useApp } from '../context/AppContext';
 import { Sparkles, TrendingUp, TrendingDown, Heart, ShieldCheck, Award, Zap, Sun } from 'lucide-react';
 
-const ICON_MAP = {
-  Sparkles,
-  TrendingUp,
-  TrendingDown,
-  Heart,
-  Zap,
-  Sun
-};
+const ICON_MAP = { Sparkles, TrendingUp, TrendingDown, Heart, Zap, Sun };
 
 export const HealthJourneys = () => {
-  const { activeProfile, ranju, manish } = useApp();
+  const { currentProfileData = {} } = useApp();
 
-  const journeys = activeProfile === 'manish' ? manish.journeys : ranju.journeys;
-  const userName = activeProfile === 'manish' ? 'Manish' : 'Ranju';
+  const journeys = currentProfileData?.journeys || [];
+  const userName = currentProfileData?.userName || 'User';
 
   return (
     <div className="space-y-6 w-full">
@@ -41,7 +34,7 @@ export const HealthJourneys = () => {
           return (
             <div key={journey.id} className="ios-glass-card p-5 border-white/10 space-y-4 w-full">
               
-              {/* Journey Title Header */}
+              {/* Header */}
               <div className="flex items-center justify-between gap-2 pb-2 border-b border-white/10">
                 <div className="flex items-center gap-2.5">
                   <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-400">
@@ -58,7 +51,7 @@ export const HealthJourneys = () => {
                 </span>
               </div>
 
-              {/* Progress Line */}
+              {/* Line */}
               <div className="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-white/5">
                 <div 
                   className="bg-emerald-400 h-full rounded-full transition-all duration-500"
@@ -66,7 +59,7 @@ export const HealthJourneys = () => {
                 />
               </div>
 
-              {/* Key Metrics Grid */}
+              {/* Metrics */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
                 {journey.metrics.map((m, idx) => (
                   <div key={idx} className="p-3 rounded-xl bg-slate-950/80 border border-white/5 space-y-0.5">
@@ -76,7 +69,7 @@ export const HealthJourneys = () => {
                 ))}
               </div>
 
-              {/* AI Recommendations */}
+              {/* AI Recommendation */}
               <div className="p-3.5 rounded-xl bg-emerald-950/20 border border-emerald-500/30 space-y-1 text-xs">
                 <div className="flex items-center gap-1 text-emerald-400 font-bold text-[11px]">
                   <ShieldCheck className="w-3.5 h-3.5" /> AI Companion Recommendation:
