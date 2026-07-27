@@ -246,23 +246,35 @@ export const AppProvider = ({ children }) => {
     const waterTarget = profileObj.waterTargetMl || (isHusband ? 3000 : 2500);
     const walk = profileObj.walkStepsLogged || 0;
     const walkTarget = profileObj.walkStepsTarget || (isHusband ? 8000 : 5000);
+    const goals = cleanPronouns(Array.isArray(profileObj.healthGoals) ? profileObj.healthGoals.join(', ') : (profileObj.healthGoals || 'wellness & routine'));
+    const concerns = cleanPronouns(Array.isArray(profileObj.healthConcerns) ? profileObj.healthConcerns.join(', ') : (profileObj.healthConcerns || ''));
 
-    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const userMsg = { sender: 'user', text: userText.trim(), timestamp };
+    const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const userMsg = { sender: 'user', text: userText.trim(), timestamp: nowTime };
 
     const lower = userText.toLowerCase();
     let replyText = '';
 
-    // INTENT 1: Daily Plan / Schedule / What to do
+    // INTENT 1: Current Time / Clock / Next Activity Inquiry
     if (
+      lower.includes('time') || 
+      lower.includes('clock') || 
+      lower.includes('next task') || 
+      lower.includes('next activity') || 
+      lower.includes('what to do right now')
+    ) {
+      const currentAction = (profileObj.timeline || []).find(item => !item.completed) || { title: 'All daily activities completed! 🎉', time: 'Rest Mode', description: 'Enjoy your evening.' };
+      replyText = `The current time is ${nowTime}. Right now on your Life Timeline (${currentAction.time}): ${currentAction.title}. ${currentAction.description || ''}`;
+    }
+    // INTENT 2: Daily Plan / Schedule / Routine
+    else if (
       lower.includes('plan') || 
       lower.includes('today') || 
       lower.includes('start') || 
-      lower.includes('what to do') || 
-      lower.includes('tell me') || 
       lower.includes('schedule') || 
-      lower.includes('routine') ||
-      lower.includes('guide')
+      lower.includes('routine') || 
+      lower.includes('guide') ||
+      lower.includes('what should i do')
     ) {
       if (isHusband) {
         replyText = `Good Morning, ${name} ⚡! Here is your personalized daily plan for gradual fat loss & boil reduction:
@@ -272,7 +284,7 @@ export const AppProvider = ({ children }) => {
 3. 🥗 High-Fiber Breakfast (9:00 AM): Sprouts salad + 2 boiled eggs to preserve muscle mass.
 4. 💧 Midday Hydration (11:30 AM): Drink 3.0L detox water (cucumber/mint) throughout the day.
 5. 👫 Sunset Walk Together (6:15 PM): Join Ranju for evening walk to hit your 8,000 steps target!
-6. 🌙 Early Sleep (10:15 PM): Bedtime before 10:30 PM to regulate Ghrelin appetite hormones.`;
+6. 🌙 Early Sleep (10:15 PM): Bedtime before 10:30 PM to regulate appetite hormones.`;
       } else {
         replyText = `Good Morning, ${name} 🌿! Here is your personalized daily plan for hair health, skin glow & fitness:
 
@@ -283,49 +295,64 @@ export const AppProvider = ({ children }) => {
 5. 👫 Evening Walk (6:15 PM): 30 mins walking together.
 6. 🌙 Restorative Sleep (10:45 PM): Sleep early to allow overnight hair cell regeneration.`;
       }
-    } 
-    // INTENT 2: Hair & Scalp
+    }
+    // INTENT 3: Water & Hydration
+    else if (lower.includes('water') || lower.includes('drink') || lower.includes('hydrate') || lower.includes('hydration')) {
+      const remaining = Math.max(0, waterTarget - water);
+      replyText = `${name}, you have consumed ${water} ml of water today out of your ${waterTarget} ml target. You have ${remaining} ml remaining. Sip a glass of water right now!`;
+    }
+    // INTENT 4: Steps & Walking
+    else if (lower.includes('walk') || lower.includes('step') || lower.includes('distance')) {
+      replyText = `${name}, you have logged ${walk} steps out of your ${walkTarget} daily step goal! You're making great progress towards your fitness target.`;
+    }
+    // INTENT 5: Meals & Food Advice
+    else if (lower.includes('food') || lower.includes('eat') || lower.includes('meal') || lower.includes('dinner') || lower.includes('lunch') || lower.includes('breakfast') || lower.includes('diet') || lower.includes('recipe')) {
+      const meals = profileObj.mealsData || {};
+      replyText = `${name}, based on your target nutrient focus:
+• Breakfast: ${meals.breakfast?.[0]?.name || 'Sprouts salad + Boiled eggs'}
+• Lunch: ${meals.lunch?.[0]?.name || 'Grilled chicken/paneer + Cucumber salad'}
+• Dinner: ${meals.dinner?.[0]?.name || 'Light Dal soup + Sautéed green veggies'}`;
+    }
+    // INTENT 6: Profile & Goals Summary Inquiry
+    else if (lower.includes('goal') || lower.includes('concern') || lower.includes('who am i') || lower.includes('my profile')) {
+      replyText = `Here is your profile summary, ${name}:
+• Weight: ${profileObj.weightKg || 60} kg (Target: ${profileObj.targetWeightKg || 55} kg)
+• Schedule: Wake at ${profileObj.wakeTime || '7:30 AM'}, Sleep at ${profileObj.sleepTime || '10:45 PM'}
+• Health Goals: ${goals || 'General wellness & routine'}
+• Active Concerns: ${concerns || 'Routine consistency'}`;
+    }
+    // INTENT 7: Identity & Friendly Greetings
+    else if (lower.includes('hi') || lower.includes('hello') || lower.includes('hey') || lower.includes('who are you') || lower.includes('good morning') || lower.includes('good evening')) {
+      replyText = `Hello ${name}! 👋 I am your AI Personal Wellness Companion. I'm right beside you to guide your daily routine, track your water & steps, suggest wholesome meals, and help you reach ${goals || 'your health goals'}. How can I assist you right now?`;
+    }
+    // INTENT 8: Hair Health
     else if (lower.includes('hair') || lower.includes('scalp') || lower.includes('fall')) {
       replyText = `${name}, to strengthen your hair roots and reverse hair fall:
-
 1. Protein Focus: Eat boiled eggs, dal, or sprouts today for keratin synthesis.
 2. Micronutrients: Ensure Vitamin D, B12, Iron, and Zinc intake.
 3. Scalp Circulation: Practice 20 mins of restorative yoga at 5:30 PM.
 4. Early Sleep: Go to bed before 10:45 PM for cell repair.`;
-    } 
-    // INTENT 3: Boils / Skin Heat / Detox
+    }
+    // INTENT 9: Boils / Skin Heat
     else if (lower.includes('boil') || lower.includes('heat') || lower.includes('skin') || lower.includes('glow')) {
-      if (isHusband || lower.includes('boil')) {
-        replyText = `${name}, to reduce recurring skin boils and clear body heat:
-
+      replyText = `${name}, for skin health and reducing internal body heat:
 1. 3.0L Detox Hydration: Drink cucumber, mint, and lemon water all day.
 2. Zero Processed Sugar: Avoid fried snacks & refined sugars that trigger pore inflammation.
 3. Fiber Lunch: Eat large cucumber/tomato salad with lean protein.`;
-      } else {
-        replyText = `${name}, to enhance natural skin glow and collagen:
-
-1. 2.5L Water Target: Hydration keeps skin plump and flushes toxins.
-2. Antioxidants: Eat fresh berries, green leafy vegetables, and citrus.
-3. Restful Sleep: Sleeping by 10:45 PM reduces dark circles and dullness.`;
-      }
-    } 
-    // INTENT 4: Hydration
-    else if (lower.includes('water') || lower.includes('drink') || lower.includes('hydrate')) {
-      replyText = `${name}, you have logged ${water} ml out of your ${waterTarget} ml daily target. Drink 500 ml right now to maintain peak energy!`;
-    } 
-    // INTENT 5: Walking / Weight / Steps
-    else if (lower.includes('walk') || lower.includes('step') || lower.includes('weight') || lower.includes('fat')) {
-      replyText = `${name}, to reach your 8,000 steps walking goal and support fat loss:
-
-1. Current Progress: ${walk} steps logged out of ${walkTarget} target steps.
-2. Evening Walk: Join the 6:15 PM sunset walk to complete the remaining steps!`;
-    } 
-    // FALLBACK
+    }
+    // INTENT 10: Weight Loss & Fat Loss
+    else if (lower.includes('weight') || lower.includes('fat') || lower.includes('slim') || lower.includes('loss')) {
+      replyText = `${name}, for gradual fat loss and metabolic fitness:
+1. 8,000 Steps Target: Split walking into morning 4,000 steps + 6:15 PM sunset walk.
+2. Carb-Conscious Dinner: Keep dinner protein and veggie focused to burn body fat overnight.`;
+    }
+    // Conversational Fallback
     else {
-      replyText = `I'm right here with you, ${name}! Following your daily Life Timeline step-by-step will help you achieve your health goals. Ask me for today's plan anytime!`;
+      const currentAction = (profileObj.timeline || []).find(item => !item.completed) || { title: 'All daily activities complete!', time: 'Rest Mode' };
+      replyText = `I hear you, ${name}! Right now on your schedule (${currentAction.time}): ${currentAction.title}. Following your daily Life Timeline step-by-step will help you achieve ${goals || 'your health goals'}. Feel free to ask me for your daily plan, water status, or meal suggestions anytime!`;
     }
 
-    const aiMsg = { sender: 'ai', text: replyText, timestamp };
+    const aiMsg = { sender: 'ai', text: replyText, timestamp: nowTime };
 
     setState(prev => {
       const existing = prev.aiMessages?.[pid] || [];
