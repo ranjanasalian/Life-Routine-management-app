@@ -1,15 +1,15 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
-import { Sun, Calendar, Heart, Utensils, Sparkles } from 'lucide-react';
+import { Sun, Calendar, Award, Users, Sparkles } from 'lucide-react';
 
 export const BottomNav = () => {
-  const { activeTab, setActiveTab } = useApp();
+  const { activeTab, setActiveTab, activeProfile } = useApp();
 
   const navItems = [
     { id: 'today', label: 'Today', icon: Sun },
     { id: 'schedule', label: 'Flow', icon: Calendar },
-    { id: 'yoga', label: 'Yoga', icon: Heart },
-    { id: 'nutrition', label: 'Meals', icon: Utensils },
+    { id: 'journeys', label: 'Journeys', icon: Award },
+    { id: 'couple', label: 'Couple', icon: Users },
     { id: 'health', label: 'Health', icon: Sparkles }
   ];
 
@@ -19,13 +19,13 @@ export const BottomNav = () => {
         <nav className="ios-glass-card p-2 border-white/10 flex items-center justify-around shadow-2xl bg-slate-950/80 backdrop-blur-3xl rounded-full">
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = activeTab === item.id || (item.id === 'health' && (activeTab === 'wellness' || activeTab === 'ai_coach' || activeTab === 'progress'));
+            const isActive = activeTab === item.id || (item.id === 'couple' && activeProfile === 'couple') || (item.id === 'health' && (activeTab === 'yoga' || activeTab === 'nutrition' || activeTab === 'wellness' || activeTab === 'ai_coach' || activeTab === 'progress'));
             
             return (
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`relative flex flex-col items-center justify-center py-2 px-4 rounded-full transition-all duration-300 ${
+                className={`relative flex flex-col items-center justify-center py-2 px-3 rounded-full transition-all duration-300 ${
                   isActive 
                     ? 'text-emerald-400 font-extrabold scale-105' 
                     : 'text-slate-500 hover:text-slate-300 font-medium'
